@@ -1,4 +1,5 @@
 import { goToSection } from "../../route";
+import { Link } from "../Link";
 import type { Theme } from "../../theme";
 import { Icon } from "../Icon";
 
@@ -20,33 +21,33 @@ const LINKS = [
 export function SiteHeader({ theme, onToggleTheme, installUrl }: Props) {
   return (
     <header className="header site-header">
-      <a className="brand" href="#/" aria-label="Reviewly home">
+      <Link className="brand" to="/" aria-label="Reviewly home">
         <span className="mark">
           <Icon name="check" size={14} />
         </span>
         Reviewly
-      </a>
+      </Link>
       <nav aria-label="Sections" className="nav site-nav">
         {LINKS.map(([id, label]) => (
-          <a
+          <Link
             key={id}
-            href="#/"
+            to="/"
             onClick={(e) => {
               e.preventDefault();
               goToSection(id);
             }}
           >
             {label}
-          </a>
+          </Link>
         ))}
       </nav>
       <span className="spacer" />
       <button className="btn" onClick={onToggleTheme} aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}>
         <Icon name={theme === "dark" ? "sun" : "moon"} size={14} />
       </button>
-      <a className="link" href="#/signin">
+      <Link className="link" to="/signin">
         Sign in
-      </a>
+      </Link>
       {installUrl && (
         <a className="btn primary" href={installUrl}>
           <Icon name="plus" size={14} />

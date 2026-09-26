@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { goToSection } from "../../route";
+import { Link } from "../Link";
 import type { PublicConfig } from "../../types";
 import { Icon, type IconName } from "../Icon";
 import { ReviewPreview } from "./ReviewPreview";
@@ -101,10 +102,10 @@ export function Landing({ config, installUrl }: Props) {
       Install on GitHub
     </a>
   ) : (
-    <a className="btn primary big" href="#/signin">
+    <Link className="btn primary big" to="/signin">
       <Icon name="log-in" size={15} />
       Sign in
-    </a>
+    </Link>
   );
 
   return (
@@ -203,7 +204,7 @@ export function Landing({ config, installUrl }: Props) {
           </li>
         </ul>
         <p className="muted small">
-          Read the full <a className="inline-link" href="#/privacy">data handling</a> page.
+          Read the full <Link className="inline-link" to="/privacy">data handling</Link> page.
         </p>
       </Section>
 
@@ -226,7 +227,7 @@ export function Landing({ config, installUrl }: Props) {
               <li><Icon name="check" size={14} />Everything in Free</li>
               <li><Icon name="check" size={14} />No monthly limit</li>
             </ul>
-            {billing ? <a className="btn" href="#/signin">Sign in to upgrade</a> : <span className="muted small">Paid plans are not enabled on this server.</span>}
+            {billing ? <Link className="btn" to="/signin">Sign in to upgrade</Link> : <span className="muted small">Paid plans are not enabled on this server.</span>}
           </div>
           <div className="card plan-card">
             <h3>Your own key</h3>
@@ -235,7 +236,7 @@ export function Landing({ config, installUrl }: Props) {
               <li><Icon name="check" size={14} />Choose any model you have access to</li>
               <li><Icon name="check" size={14} />Doesn't count against the free allowance</li>
             </ul>
-            <a className="btn" href="#/signin">Add a key</a>
+            <Link className="btn" to="/signin">Add a key</Link>
           </div>
         </div>
       </Section>

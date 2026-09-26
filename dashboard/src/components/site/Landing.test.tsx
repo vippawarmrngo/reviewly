@@ -28,7 +28,7 @@ describe("Landing", () => {
   it("falls back to sign in when there is no install URL", () => {
     render(<Landing config={cfg({ app_install_url: null })} installUrl={null} />);
     expect(screen.queryByRole("link", { name: /install on github/i })).not.toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Sign in" })[0]).toHaveAttribute("href", "#/signin");
+    expect(screen.getAllByRole("link", { name: "Sign in" })[0]).toHaveAttribute("href", "/signin");
   });
 
   it("has every section the header links to", () => {
@@ -73,7 +73,7 @@ describe("SiteHeader and footer", () => {
   it("links to sign in and toggles the theme", async () => {
     const toggle = vi.fn();
     render(<SiteHeader theme="light" onToggleTheme={toggle} installUrl={INSTALL} />);
-    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "#/signin");
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/signin");
     await userEvent.click(screen.getByRole("button", { name: /switch to dark mode/i }));
     expect(toggle).toHaveBeenCalled();
   });
@@ -84,7 +84,7 @@ describe("SiteHeader and footer", () => {
     el.id = "pricing";
     el.scrollIntoView = scroll;
     document.body.appendChild(el);
-    window.location.hash = "#/";
+    window.history.replaceState(null, "", "/");
     render(<SiteHeader theme="light" onToggleTheme={() => undefined} installUrl={null} />);
     await userEvent.click(screen.getByRole("link", { name: "Pricing" }));
     expect(scroll).toHaveBeenCalled();
@@ -93,7 +93,7 @@ describe("SiteHeader and footer", () => {
 
   it("footer links to data handling and the source, and shows the license", () => {
     render(<SiteFooter installUrl={INSTALL} />);
-    expect(screen.getByRole("link", { name: "Data handling" })).toHaveAttribute("href", "#/privacy");
+    expect(screen.getByRole("link", { name: "Data handling" })).toHaveAttribute("href", "/privacy");
     expect(screen.getByRole("link", { name: /source code/i })).toHaveAttribute("rel", "noopener noreferrer");
     expect(screen.getByText(/MIT license/)).toBeInTheDocument();
   });

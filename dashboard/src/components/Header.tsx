@@ -1,4 +1,5 @@
 import type { Route } from "../route";
+import { Link } from "./Link";
 import type { Theme } from "../theme";
 import { Icon } from "./Icon";
 
@@ -30,14 +31,14 @@ export function Header({ installations, names = {}, selected, onSelect, theme, o
       </span>
       {showNav && (
         <nav aria-label="Main" className="nav">
-          <a href="#/overview" aria-current={route === "overview" ? "page" : undefined}>
+          <Link to="/app" aria-current={route === "overview" ? "page" : undefined}>
             <Icon name="grid" size={14} />
             Overview
-          </a>
-          <a href="#/settings" aria-current={route === "settings" ? "page" : undefined}>
+          </Link>
+          <Link to="/app/settings" aria-current={route === "settings" ? "page" : undefined}>
             <Icon name="cpu" size={14} />
             Settings
-          </a>
+          </Link>
         </nav>
       )}
       <span className="spacer" />

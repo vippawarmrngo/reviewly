@@ -1,6 +1,7 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
+import { navigate } from "./route";
 import { llmNone, overview } from "./fixtures";
 
 function mockApi(routes: Record<string, () => Response | Promise<Response>>) {
@@ -17,7 +18,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 
 beforeEach(() => {
   localStorage.clear();
-  window.location.hash = "";
+  window.history.replaceState(null, "", "/");
   delete document.documentElement.dataset.theme;
   vi.stubGlobal("matchMedia", (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }));
 });
@@ -32,7 +33,7 @@ const loggedIn = {
 
 describe("signed out", () => {
   it("shows the sign-in screen when the API says 401", async () => {
-    window.location.hash = "#/signin";
+    window.history.replaceState(null, "", "/signin");
     mockApi({ "GET /api/session": () => json({ signed_in: false }) });
     render(<App />);
     const link = await screen.findByRole("link", { name: /sign in with github/i });
@@ -72,7 +73,7 @@ describe("signed in", () => {
   });
 
   it("shows the plan, its meter and the upgrade button", async () => {
-    window.location.hash = "#/settings";
+    window.history.replaceState(null, "", "/app/settings");
     mockApi(loggedIn);
     render(<App />);
     const plan = await screen.findByRole("region", { name: "Plan" });
@@ -82,7 +83,7 @@ describe("signed in", () => {
   });
 
   it("does not offer an upgrade to a paying installation", async () => {
-    window.location.hash = "#/settings";
+    window.history.replaceState(null, "", "/app/settings");
     mockApi({ ...loggedIn, "GET /api/installations/42/overview": () => json({ ...overview, plan: { name: "pro", limit: null, used: 30 } }) });
     render(<App />);
     expect(await screen.findByText("Pro plan")).toBeInTheDocument();
@@ -99,7 +100,7 @@ describe("signed in", () => {
   });
 
   it("starts checkout and sends the browser to Stripe", async () => {
-    window.location.hash = "#/settings";
+    window.history.replaceState(null, "", "/app/settings");
     const assign = vi.fn();
     vi.stubGlobal("location", { ...window.location, assign });
     const fetchMock = mockApi({ ...loggedIn, "POST /api/installations/42/billing/checkout": () => json({ url: "https://checkout.stripe.com/c/x" }) });
@@ -110,7 +111,7 @@ describe("signed in", () => {
   });
 
   it("explains when billing is not configured instead of failing silently", async () => {
-    window.location.hash = "#/settings";
+    window.history.replaceState(null, "", "/app/settings");
     mockApi({ ...loggedIn, "POST /api/installations/42/billing/checkout": () => new Response("", { status: 503 }) });
     render(<App />);
     await userEvent.click(await screen.findByRole("button", { name: "Upgrade" }));
@@ -140,7 +141,7 @@ describe("signed in", () => {
   });
 
   it("returns to the sign-in screen if the session expires mid-use", async () => {
-    window.location.hash = "#/overview";
+    window.history.replaceState(null, "", "/app");
     mockApi({ ...loggedIn, "GET /api/installations/42/overview": () => new Response("", { status: 401 }) });
     render(<App />);
     expect(await screen.findByRole("link", { name: /sign in with github/i })).toBeInTheDocument();
@@ -217,7 +218,7 @@ describe("onboarding and AI model", () => {
   });
 
   it("hides it once reviews exist, and shows the AI model section under Settings", async () => {
-    window.location.hash = "#/settings";
+    window.history.replaceState(null, "", "/app/settings");
     mockApi(loggedIn);
     render(<App />);
     await screen.findByRole("region", { name: "Plan" });
@@ -259,23 +260,61 @@ describe("navigation and shell", () => {
     render(<App />);
     await screen.findByRole("region", { name: "Summary" });
     await act(async () => {
-      window.location.hash = "#/settings";
+      navigate("/app/settings");
     });
     expect(await screen.findByRole("region", { name: "AI model" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Plan" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Summary" })).not.toBeInTheDocument();
     expect(document.title).toBe("Settings · Reviewly");
     await act(async () => {
-      window.location.hash = "#/overview";
+      navigate("/app");
     });
     expect(await screen.findByRole("region", { name: "Summary" })).toBeInTheDocument();
   });
 
-  it("treats an unknown hash as Overview", async () => {
-    window.location.hash = "#/nonsense";
+  it("shows a not-found page for an unknown address, in the app for a signed-in user", async () => {
+    window.history.replaceState(null, "", "/nonsense");
     mockApi(loggedIn);
     render(<App />);
+    expect(await screen.findByRole("heading", { level: 1, name: "Page not found" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to your dashboard" })).toHaveAttribute("href", "/app");
+    expect(document.title).toBe("Page not found · Reviewly");
+    expect(window.location.pathname).toBe("/nonsense"); // the URL is left alone
+  });
+
+  it("shows a not-found page to a signed-out visitor too", async () => {
+    window.history.replaceState(null, "", "/nope/deeper");
+    mockApi({ "GET /api/session": () => json({ signed_in: false }) });
+    render(<App />);
+    expect(await screen.findByRole("heading", { level: 1, name: "Page not found" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to the home page" })).toHaveAttribute("href", "/");
+  });
+
+  it("puts the address bar on the real page: signed-in / becomes /app, signed-out /app becomes /signin", async () => {
+    mockApi(loggedIn);
+    const first = render(<App />);
+    await screen.findByRole("region", { name: "Summary" });
+    await waitFor(() => expect(window.location.pathname).toBe("/app"));
+    first.unmount();
+    window.history.replaceState(null, "", "/app/settings");
+    mockApi({ "GET /api/session": () => json({ signed_in: false }) });
+    render(<App />);
+    await screen.findByRole("heading", { level: 1, name: "Sign in to Reviewly" });
+    await waitFor(() => expect(window.location.pathname).toBe("/signin"));
+  });
+
+  it("navigates without a page load and follows the back button", async () => {
+    mockApi(loggedIn);
+    render(<App />);
+    await screen.findByRole("region", { name: "Summary" });
+    await userEvent.click(within(screen.getByRole("navigation", { name: "Main" })).getByRole("link", { name: "Settings" }));
+    expect(await screen.findByRole("region", { name: "AI model" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/app/settings");
+    await act(async () => {
+      window.history.back();
+    });
     expect(await screen.findByRole("region", { name: "Summary" })).toBeInTheDocument();
+    expect(window.scrollTo).toHaveBeenCalled();
   });
 
   it("shows no navigation to a signed-out visitor", async () => {
@@ -400,7 +439,7 @@ describe("production behaviour", () => {
     await screen.findByRole("region", { name: "Summary" });
     expect(screen.getByRole("main")).not.toHaveFocus(); // not stolen on first load
     await act(async () => {
-      window.location.hash = "#/settings";
+      navigate("/app/settings");
     });
     await screen.findByRole("region", { name: "AI model" });
     await waitFor(() => expect(screen.getByRole("main")).toHaveFocus());
@@ -417,7 +456,7 @@ describe("look and feel", () => {
   });
 
   it("marks a plan that is nearly used up", async () => {
-    window.location.hash = "#/settings";
+    window.history.replaceState(null, "", "/app/settings");
     mockApi({ ...loggedIn, "GET /api/installations/42/overview": () => json({ ...overview, plan: { name: "free", limit: 20, used: 19 } }) });
     render(<App />);
     const plan = await screen.findByRole("region", { name: "Plan" });
@@ -449,7 +488,7 @@ describe("public site", () => {
   });
 
   it("shows the data-handling page at #/privacy, signed in or not", async () => {
-    window.location.hash = "#/privacy";
+    window.history.replaceState(null, "", "/privacy");
     mockApi({ "GET /api/session": () => json({ signed_in: false }) });
     const first = render(<App />);
     expect(await screen.findByRole("heading", { level: 1, name: "Data handling" })).toBeInTheDocument();
@@ -468,7 +507,7 @@ describe("public site", () => {
   });
 
   it("does not show the app to a signed-out visitor who opens a dashboard link", async () => {
-    window.location.hash = "#/settings";
+    window.history.replaceState(null, "", "/app/settings");
     mockApi({ "GET /api/session": () => json({ signed_in: false }) });
     render(<App />);
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in to Reviewly" })).toBeInTheDocument();

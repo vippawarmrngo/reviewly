@@ -1,4 +1,5 @@
 import { goToSection } from "../../route";
+import { Link } from "../Link";
 import { Icon } from "../Icon";
 
 const SOURCE = "https://github.com/vippawar1104/meeting-summarizer";
@@ -23,15 +24,15 @@ export function SiteFooter({ installUrl }: { installUrl: string | null }) {
         </div>
         <div>
           <h3>Product</h3>
-          <a href="#/" onClick={jump("how")}>How it works</a>
-          <a href="#/" onClick={jump("features")}>Features</a>
-          <a href="#/" onClick={jump("pricing")}>Pricing</a>
-          <a href="#/" onClick={jump("faq")}>FAQ</a>
+          <Link to="/" onClick={jump("how")}>How it works</Link>
+          <Link to="/" onClick={jump("features")}>Features</Link>
+          <Link to="/" onClick={jump("pricing")}>Pricing</Link>
+          <Link to="/" onClick={jump("faq")}>FAQ</Link>
         </div>
         <div>
           <h3>Trust</h3>
-          <a href="#/" onClick={jump("security")}>Security</a>
-          <a href="#/privacy">Data handling</a>
+          <Link to="/" onClick={jump("security")}>Security</Link>
+          <Link to="/privacy">Data handling</Link>
           <a href={SOURCE} target="_blank" rel="noopener noreferrer">
             Source code <Icon name="external-link" size={11} />
           </a>
@@ -39,7 +40,7 @@ export function SiteFooter({ installUrl }: { installUrl: string | null }) {
         <div>
           <h3>Get started</h3>
           {installUrl && <a href={installUrl}>Install on GitHub</a>}
-          <a href="#/signin">Sign in</a>
+          <Link to="/signin">Sign in</Link>
         </div>
       </div>
       <div className="site-footer-base">

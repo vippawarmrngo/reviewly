@@ -5,6 +5,7 @@ import { Header } from "./components/Header";
 import { Icon } from "./components/Icon";
 import { Login } from "./components/Login";
 import { Landing } from "./components/site/Landing";
+import { NotFound } from "./components/site/NotFound";
 import { Privacy } from "./components/site/Privacy";
 import { SiteFooter } from "./components/site/SiteFooter";
 import { SiteHeader } from "./components/site/SiteHeader";
@@ -17,7 +18,8 @@ import { RecentTable, RepoTable, statusOf } from "./components/Tables";
 import { Tile } from "./components/Tile";
 import { UsageChart } from "./components/UsageChart";
 import { compact, int, pct, relativeTime, usd } from "./format";
-import { type Route, useRoute } from "./route";
+import { PageTransition } from "./motion/PageTransition";
+import { type Route, navigate, pathOf, useRoute } from "./route";
 import { useTheme } from "./theme";
 import type { Me, Overview, PublicConfig } from "./types";
 
@@ -34,6 +36,7 @@ const TITLES: Record<Route, string> = {
   signin: "Sign in · Reviewly",
   overview: "Overview · Reviewly",
   settings: "Settings · Reviewly",
+  notfound: "Page not found · Reviewly",
 };
 
 export default function App() {
@@ -62,6 +65,12 @@ export default function App() {
   useEffect(() => {
     document.title = session.kind === "loading" ? "Reviewly" : TITLES[view];
   }, [view, session.kind]);
+
+  // Keep the address bar honest when the view differs from the URL (signed-in "/" -> "/app", signed-out "/app" -> "/signin").
+  useEffect(() => {
+    if (session.kind === "loading" || session.kind === "error") return;
+    if (view !== route && view !== "notfound") navigate(pathOf(view), { replace: true, silent: true });
+  }, [view, route, session.kind]);
 
   useEffect(() => {
     fetchConfig()
@@ -108,6 +117,7 @@ export default function App() {
       return;
     }
     mainRef.current?.focus();
+    window.scrollTo?.(0, 0);
   }, [route]); // the user's navigation, not the session settling (which also changes `view`)
 
   // While a review is still running, keep the table current without the user pressing Refresh.
@@ -140,7 +150,7 @@ export default function App() {
         showNav={hasInstallation}
       />
       <main id="main" tabIndex={-1} ref={mainRef}>
-        {body}
+        <PageTransition pageKey={view}>{body}</PageTransition>
       </main>
       <footer className="footer">
         <span>Reviewly</span>
@@ -158,7 +168,7 @@ export default function App() {
       </a>
       <SiteHeader theme={theme} onToggleTheme={toggleTheme} installUrl={installUrl} />
       <main id="main" tabIndex={-1} ref={mainRef}>
-        {body}
+        <PageTransition pageKey={view}>{body}</PageTransition>
       </main>
       <SiteFooter installUrl={installUrl} />
     </div>
@@ -176,9 +186,12 @@ export default function App() {
     );
   }
   if (session.kind === "login") {
-    return publicShell(view === "privacy" ? <Privacy /> : view === "signin" ? <Login config={config} /> : <Landing config={config} installUrl={installUrl} />);
+    const page =
+      view === "privacy" ? <Privacy /> : view === "signin" ? <Login config={config} /> : view === "notfound" ? <NotFound signedIn={false} /> : <Landing config={config} installUrl={installUrl} />;
+    return publicShell(page);
   }
   if (view === "privacy") return appShell(<Privacy />);
+  if (view === "notfound") return appShell(<NotFound signedIn />);
   if (installation === null) {
     return appShell(
       <div className="center">
