@@ -258,7 +258,7 @@ describe("features", () => {
     render(<Features />);
     expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(6);
     const yaml = document.querySelector(".mini-code.yaml")!;
-    expect(yaml).toHaveTextContent("strictness: high");
+    expect(yaml).toHaveTextContent("strictness: medium");
     expect(yaml.textContent).not.toContain("#"); // no comments, inline or otherwise
   });
 

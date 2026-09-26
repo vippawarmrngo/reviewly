@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { Unauthorized, fetchConfig, fetchLLM, fetchMe, fetchOverview } from "./api";
 import { GettingStarted } from "./components/GettingStarted";
 import { Header } from "./components/Header";
 import { Icon } from "./components/Icon";
 import { Login } from "./components/Login";
+import { Link } from "./components/Link";
 import { Landing } from "./components/site/Landing";
 import { NotFound } from "./components/site/NotFound";
-import { Privacy } from "./components/site/Privacy";
 import { SiteFooter } from "./components/site/SiteFooter";
 import { SiteHeader } from "./components/site/SiteHeader";
 import { ModelSettings } from "./components/ModelSettings";
@@ -25,6 +25,24 @@ import type { Me, Overview, PublicConfig } from "./types";
 
 type Session = { kind: "loading" } | { kind: "login" } | { kind: "error"; message: string } | { kind: "ready"; me: Me };
 
+// Information pages load on demand, so the landing page does not carry them.
+const Privacy = lazy(() => import("./components/site/Privacy").then((m) => ({ default: m.Privacy })));
+const Docs = lazy(() => import("./components/site/Docs"));
+const Changelog = lazy(() => import("./components/site/Changelog"));
+const Status = lazy(() => import("./components/site/Status"));
+
+const INFO_PAGES: Partial<Record<Route, React.ReactNode>> = {
+  privacy: <Privacy />,
+  docs: <Docs />,
+  changelog: <Changelog />,
+  status: <Status />,
+};
+const Loading = () => (
+  <div className="center" role="status" aria-live="polite">
+    <p>Loading…</p>
+  </div>
+);
+
 const AUTO_REFRESH_MS = 20_000;
 const SUBTITLES = {
   overview: (name?: string) => (name ? `How Reviewly is doing on ${name}'s repositories.` : "How Reviewly is doing on your repositories."),
@@ -32,6 +50,9 @@ const SUBTITLES = {
 } as const;
 const TITLES: Record<Route, string> = {
   home: "Reviewly · AI code review for GitHub pull requests",
+  docs: "Docs · Reviewly",
+  changelog: "Changelog · Reviewly",
+  status: "Status · Reviewly",
   privacy: "Data handling · Reviewly",
   signin: "Sign in · Reviewly",
   overview: "Overview · Reviewly",
@@ -150,10 +171,16 @@ export default function App() {
         showNav={hasInstallation}
       />
       <main id="main" tabIndex={-1} ref={mainRef}>
-        <PageTransition pageKey={view}>{body}</PageTransition>
+        <PageTransition pageKey={view}>
+          <Suspense fallback={<Loading />}>{body}</Suspense>
+        </PageTransition>
       </main>
       <footer className="footer">
         <span>Reviewly</span>
+        <Link className="inline-link" to="/docs">Docs</Link>
+        <Link className="inline-link" to="/changelog">Changelog</Link>
+        <Link className="inline-link" to="/status">Status</Link>
+        <Link className="inline-link" to="/privacy">Data handling</Link>
         <a className="inline-link" href="https://github.com/vippawar1104/meeting-summarizer" target="_blank" rel="noopener noreferrer">
           Source <Icon name="external-link" size={11} />
         </a>
@@ -168,7 +195,9 @@ export default function App() {
       </a>
       <SiteHeader theme={theme} onToggleTheme={toggleTheme} installUrl={installUrl} />
       <main id="main" tabIndex={-1} ref={mainRef}>
-        <PageTransition pageKey={view}>{body}</PageTransition>
+        <PageTransition pageKey={view}>
+          <Suspense fallback={<Loading />}>{body}</Suspense>
+        </PageTransition>
       </main>
       <SiteFooter installUrl={installUrl} />
     </div>
@@ -187,10 +216,10 @@ export default function App() {
   }
   if (session.kind === "login") {
     const page =
-      view === "privacy" ? <Privacy /> : view === "signin" ? <Login config={config} /> : view === "notfound" ? <NotFound signedIn={false} /> : <Landing config={config} installUrl={installUrl} />;
+      INFO_PAGES[view] ?? (view === "signin" ? <Login config={config} /> : view === "notfound" ? <NotFound signedIn={false} /> : <Landing config={config} installUrl={installUrl} />);
     return publicShell(page);
   }
-  if (view === "privacy") return appShell(<Privacy />);
+  if (INFO_PAGES[view]) return appShell(INFO_PAGES[view]);
   if (view === "notfound") return appShell(<NotFound signedIn />);
   if (installation === null) {
     return appShell(

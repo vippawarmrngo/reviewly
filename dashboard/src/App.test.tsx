@@ -514,3 +514,36 @@ describe("public site", () => {
     expect(screen.queryByRole("region", { name: "AI model" })).not.toBeInTheDocument();
   });
 });
+
+describe("information pages", () => {
+  it.each([
+    ["/docs", "Docs"],
+    ["/changelog", "Changelog"],
+    ["/status", "Status"],
+    ["/privacy", "Data handling"],
+  ])("%s loads for a signed-out visitor inside the public site", async (path, heading) => {
+    window.history.replaceState(null, "", path);
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => (String(input) === "/api/session" ? json({ signed_in: false }) : json({ db: "ok", redis: "ok" }))));
+    render(<App />);
+    expect(await screen.findByRole("heading", { level: 1, name: heading })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Sections" })).toBeInTheDocument();
+    expect(document.title).toBe(`${heading} · Reviewly`);
+  });
+
+  it("also opens for a signed-in user, inside the app", async () => {
+    window.history.replaceState(null, "", "/docs");
+    mockApi(loggedIn);
+    render(<App />);
+    expect(await screen.findByRole("heading", { level: 1, name: "Docs" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Main" })).toBeInTheDocument();
+  });
+
+  it("links to them from the app footer and the public footer", async () => {
+    mockApi(loggedIn);
+    render(<App />);
+    await screen.findByRole("region", { name: "Summary" });
+    for (const [name, href] of [["Docs", "/docs"], ["Changelog", "/changelog"], ["Status", "/status"]] as const) {
+      expect(screen.getByRole("link", { name })).toHaveAttribute("href", href);
+    }
+  });
+});

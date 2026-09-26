@@ -1,6 +1,7 @@
 import { m } from "framer-motion";
 import type { ReactNode } from "react";
 import exampleConfig from "../../../content/reviewly.example.yml?raw";
+import providers from "../../../content/providers.json";
 import { Reveal } from "../../../motion/Reveal";
 import { useMotionOk } from "../../../motion/useMotionOk";
 import { Icon, type IconName } from "../../Icon";
@@ -15,7 +16,7 @@ export function configPreview(yaml: string): string {
     .join("\n");
 }
 
-const PROVIDERS = ["OpenAI", "Anthropic", "Google Gemini", "Groq", "Mistral", "Any compatible endpoint"];
+const PROVIDERS = providers.map((p) => (p.id === "custom" ? "Any compatible endpoint" : p.label));
 
 function Card({ icon, title, tone, wide, children, visual, delay }: { icon: IconName; title: string; tone?: "good" | "neutral"; wide?: boolean; children: ReactNode; visual?: ReactNode; delay: number }) {
   return (

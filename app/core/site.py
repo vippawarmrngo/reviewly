@@ -24,6 +24,17 @@ DEFAULT_DESCRIPTION = (
 # path -> (title, description, indexable)
 PAGES: dict[str, tuple[str, str, bool]] = {
     "/": ("Reviewly · AI code review for GitHub pull requests", DEFAULT_DESCRIPTION, True),
+    "/docs": (
+        "Docs · Reviewly",
+        "Install Reviewly, configure it with .reviewly.yml, teach it with accept and dismiss, and use your own AI key.",
+        True,
+    ),
+    "/changelog": ("Changelog · Reviewly", "What changed in Reviewly, newest first.", True),
+    "/status": (
+        "Status · Reviewly",
+        "Live health of this Reviewly service: database and queue connectivity.",
+        True,
+    ),
     "/privacy": (
         "Data handling · Reviewly",
         "What Reviewly sends to an AI model, what it stores, and what it deletes.",
@@ -89,7 +100,7 @@ def render_index(template: str, public_url: str, route: str) -> str:
 def robots_txt(public_url: str) -> str:
     base = public_url.rstrip("/")
     return (
-        "User-agent: *\nAllow: /$\nAllow: /privacy\n"
+        "User-agent: *\nAllow: /$\nAllow: /docs\nAllow: /changelog\nAllow: /status\nAllow: /privacy\n"
         "Disallow: /api/\nDisallow: /auth/\nDisallow: /webhooks/\nDisallow: /setup\nDisallow: /app\n"
         f"Sitemap: {base}/sitemap.xml\n"
     )

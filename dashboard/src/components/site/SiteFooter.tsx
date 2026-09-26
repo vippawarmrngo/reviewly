@@ -27,10 +27,13 @@ export function SiteFooter({ installUrl }: { installUrl: string | null }) {
           <Link to="/" onClick={jump("features")}>Features</Link>
           <Link to="/" onClick={jump("pricing")}>Pricing</Link>
           <Link to="/" onClick={jump("faq")}>FAQ</Link>
+          <Link to="/docs">Docs</Link>
+          <Link to="/changelog">Changelog</Link>
         </div>
         <div>
           <h3>Trust</h3>
           <Link to="/" onClick={jump("security")}>Security</Link>
+          <Link to="/status">Status</Link>
           <Link to="/privacy">Data handling</Link>
           <a href={SOURCE} target="_blank" rel="noopener noreferrer">
             Source code <Icon name="external-link" size={11} />

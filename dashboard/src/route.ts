@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 
 /** Public pages, and the signed-in app (overview, settings). */
-export type Route = "home" | "privacy" | "signin" | "overview" | "settings" | "notfound";
+export type Route = "home" | "docs" | "changelog" | "status" | "privacy" | "signin" | "overview" | "settings" | "notfound";
 
 /** Real URL paths, so every page can be linked, refreshed and indexed. The server answers all of them. */
 export const PATHS: Record<Exclude<Route, "notfound">, string> = {
   home: "/",
+  docs: "/docs",
+  changelog: "/changelog",
+  status: "/status",
   privacy: "/privacy",
   signin: "/signin",
   overview: "/app",

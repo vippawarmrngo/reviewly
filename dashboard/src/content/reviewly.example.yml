@@ -2,7 +2,7 @@
 ignore:            # files Reviewly should not review (globs)
   - "dist/**"
   - "**/*.lock"
-strictness: high   # low | medium | high: how sure it must be before commenting
+strictness: medium # low: only very sure, high: also less certain (more comments)
 max_comments: 10   # most comments in one review (1-100)
 rules:             # your own rules, in plain language (up to 20)
   - "Public functions need type hints."

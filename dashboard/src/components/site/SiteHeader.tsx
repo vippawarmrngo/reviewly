@@ -33,7 +33,9 @@ function ProgressBar() {
 export function SiteHeader({ theme, onToggleTheme, installUrl }: Props) {
   const ok = useMotionOk();
   const scrolled = useScrolled();
-  const onHome = parseRoute(window.location.pathname) === "home";
+  const route = parseRoute(window.location.pathname);
+  const onHome = route === "home";
+  const onDocs = route === "docs";
   const active = useScrollSpy(IDS, onHome);
   const [open, setOpen] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
@@ -71,6 +73,9 @@ export function SiteHeader({ theme, onToggleTheme, installUrl }: Props) {
             {label}
           </Link>
         ))}
+        <Link to="/docs" aria-current={onDocs ? "page" : undefined}>
+          Docs
+        </Link>
       </nav>
       <span className="spacer" />
       <button className="btn" onClick={onToggleTheme} aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}>
@@ -102,6 +107,9 @@ export function SiteHeader({ theme, onToggleTheme, installUrl }: Props) {
             {label}
           </Link>
         ))}
+        <Link to="/docs" onClick={() => setOpen(false)}>
+          Docs
+        </Link>
         <Link to="/signin" onClick={() => setOpen(false)}>
           Sign in
         </Link>

@@ -42,6 +42,8 @@ def cache_headers(path: str) -> dict[str, str]:
         return {"Cache-Control": "public, max-age=31536000, immutable"}
     if path.startswith(("/api/", "/auth/")):
         return {"Cache-Control": "no-store"}
+    if path in ("/readyz", "/healthz"):
+        return {"Cache-Control": "no-store"}  # the status page must never show a cached answer
     if path in ("/favicon.svg", "/apple-touch-icon.png", "/og.png"):
         return {"Cache-Control": "public, max-age=86400"}
     if path in ("/theme-init.js", "/robots.txt", "/sitemap.xml") or is_page(normalize(path)):

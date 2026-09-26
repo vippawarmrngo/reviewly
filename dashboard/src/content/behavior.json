@@ -1,0 +1,49 @@
+{
+  "accept_words": [
+    "accept",
+    "agree",
+    "valid",
+    "correct"
+  ],
+  "dismiss_words": [
+    "dismiss",
+    "ignore",
+    "reject",
+    "wrong",
+    "invalid"
+  ],
+  "positive_reactions": [
+    "👍",
+    "❤️",
+    "🎉",
+    "🚀"
+  ],
+  "negative_reactions": [
+    "👎",
+    "😕"
+  ],
+  "strictness": {
+    "low": 0.8,
+    "medium": 0.6,
+    "high": 0.4
+  },
+  "config": {
+    "ignore_max": 100,
+    "rules_max": 20,
+    "rule_chars": 300,
+    "max_comments_min": 1,
+    "max_comments_max": 100,
+    "default_max_comments": 25
+  },
+  "suppress_after_dismissals": 2,
+  "skip_reasons": [
+    "pull request is not open",
+    "superseded by a newer commit",
+    "already reviewed",
+    "no reviewable files",
+    "free-tier monthly review limit reached",
+    "no AI model configured",
+    "daily token budget exhausted",
+    "the installation's own API key configuration is invalid"
+  ]
+}
