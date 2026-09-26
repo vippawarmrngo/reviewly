@@ -1,4 +1,5 @@
 import { goToSection } from "../../route";
+import { LogoMark } from "../brand/Logo";
 import { Link } from "../Link";
 import { Icon } from "../Icon";
 
@@ -15,9 +16,7 @@ export function SiteFooter({ installUrl }: { installUrl: string | null }) {
       <div className="site-footer-grid">
         <div>
           <span className="brand">
-            <span className="mark">
-              <Icon name="check" size={14} />
-            </span>
+            <LogoMark size={26} />
             Reviewly
           </span>
           <p className="muted">AI code review for GitHub pull requests.</p>
@@ -45,6 +44,9 @@ export function SiteFooter({ installUrl }: { installUrl: string | null }) {
       </div>
       <div className="site-footer-base">
         <span>© {year} Reviewly. Released under the MIT license.</span>
+        <button type="button" className="link" onClick={() => window.scrollTo?.({ top: 0, behavior: "smooth" })}>
+          Back to top
+        </button>
       </div>
     </footer>
   );

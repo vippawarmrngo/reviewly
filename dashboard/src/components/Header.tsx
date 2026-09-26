@@ -1,4 +1,5 @@
 import type { Route } from "../route";
+import { LogoMark } from "./brand/Logo";
 import { Link } from "./Link";
 import type { Theme } from "../theme";
 import { Icon } from "./Icon";
@@ -24,9 +25,7 @@ export function Header({ installations, names = {}, selected, onSelect, theme, o
   return (
     <header className="header">
       <span className="brand">
-        <span className="mark">
-          <Icon name="check" size={14} />
-        </span>
+        <LogoMark size={26} />
         Reviewly
       </span>
       {showNav && (
