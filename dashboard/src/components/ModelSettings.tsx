@@ -6,6 +6,7 @@ import { Icon } from "./Icon";
 export function ModelSettings({ installation, onChange }: { installation: number; onChange?: (usesOwnKey: boolean) => void }) {
   const [current, setCurrent] = useState<LLMSettings | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState(false);
   const [provider, setProvider] = useState("");
   const [model, setModel] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -88,6 +89,7 @@ export function ModelSettings({ installation, onChange }: { installation: number
   }
 
   async function onRemove() {
+    setConfirmRemove(false);
     setBusy("remove");
     setMessage(null);
     try {
@@ -209,10 +211,22 @@ export function ModelSettings({ installation, onChange }: { installation: number
                 <Icon name="refresh" size={14} />
                 {busy === "test" ? "Testing…" : "Test again"}
               </button>
-              <button className="btn" type="button" onClick={onRemove} disabled={busy !== null}>
-                <Icon name="trash" size={14} />
-                Remove
-              </button>
+              {confirmRemove ? (
+                <span className="confirm" role="group" aria-label="Confirm removing the key">
+                  <span>Remove your key? Reviews go back to Reviewly's models.</span>
+                  <button className="btn danger" type="button" onClick={onRemove} disabled={busy !== null} autoFocus>
+                    Yes, remove
+                  </button>
+                  <button className="btn" type="button" onClick={() => setConfirmRemove(false)}>
+                    Cancel
+                  </button>
+                </span>
+              ) : (
+                <button className="btn" type="button" onClick={() => setConfirmRemove(true)} disabled={busy !== null}>
+                  <Icon name="trash" size={14} />
+                  Remove
+                </button>
+              )}
             </>
           )}
         </div>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Unauthorized, fetchConfig, fetchLLM, fetchMe, fetchOverview } from "./api";
 import { GettingStarted } from "./components/GettingStarted";
 import { Header } from "./components/Header";
@@ -9,7 +9,7 @@ import { PlanCard } from "./components/PlanCard";
 import { RuleBars } from "./components/RuleBars";
 import { SectionTitle } from "./components/SectionTitle";
 import { Skeleton } from "./components/Skeleton";
-import { RecentTable, RepoTable } from "./components/Tables";
+import { RecentTable, RepoTable, statusOf } from "./components/Tables";
 import { Tile } from "./components/Tile";
 import { UsageChart } from "./components/UsageChart";
 import { compact, int, pct, relativeTime, usd } from "./format";
@@ -19,6 +19,7 @@ import type { Me, Overview, PublicConfig } from "./types";
 
 type Session = { kind: "loading" } | { kind: "login" } | { kind: "error"; message: string } | { kind: "ready"; me: Me };
 
+const AUTO_REFRESH_MS = 20_000;
 const TITLES = { overview: "Overview", settings: "Settings" } as const;
 
 export default function App() {
@@ -74,6 +75,27 @@ export default function App() {
       .catch(() => undefined); // only decides whether a checklist step shows as done
   }, [installation, load]);
 
+  // Move keyboard/screen-reader focus to the new view when the user navigates (not on first load).
+  const mainRef = useRef<HTMLElement>(null);
+  const firstRoute = useRef(true);
+  useEffect(() => {
+    if (firstRoute.current) {
+      firstRoute.current = false;
+      return;
+    }
+    mainRef.current?.focus();
+  }, [route]);
+
+  // While a review is still running, keep the table current without the user pressing Refresh.
+  const inProgress = overview?.recent.some((r) => statusOf(r).cls === "queued") ?? false;
+  useEffect(() => {
+    if (!inProgress || installation === null) return;
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "visible") void load(installation);
+    }, AUTO_REFRESH_MS);
+    return () => window.clearInterval(id);
+  }, [inProgress, installation, load]);
+
   const signedIn = session.kind === "ready";
   const hasInstallation = signedIn && installation !== null;
   const shell = (body: React.ReactNode) => (
@@ -83,6 +105,7 @@ export default function App() {
       </a>
       <Header
         installations={signedIn ? session.me.installations : []}
+        names={signedIn ? session.me.names : undefined}
         selected={installation}
         onSelect={setInstallation}
         theme={theme}
@@ -92,7 +115,7 @@ export default function App() {
         route={route}
         showNav={hasInstallation}
       />
-      <main id="main" tabIndex={-1}>
+      <main id="main" tabIndex={-1} ref={mainRef}>
         {body}
       </main>
       <footer className="footer">

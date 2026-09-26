@@ -192,3 +192,27 @@ async def findings_page(
         }
         for r in rows
     ]
+
+
+async def installation_names(
+    sm: async_sessionmaker[AsyncSession], ids: list[int]
+) -> dict[str, str]:
+    """A readable name per installation: the owner of the repository it was last used on.
+
+    The session only carries installation ids, so the account name comes from the reviews we have
+    done. An installation with no reviews yet has no name (the UI falls back to its id).
+    """
+    names: dict[str, str] = {}
+    async with sm() as s:
+        for inst in ids:
+            repo = (
+                await s.execute(
+                    select(col(Job.repo_full_name))
+                    .where(col(Job.installation_id) == inst)
+                    .order_by(col(Job.created_at).desc())
+                    .limit(1)
+                )
+            ).scalar_one_or_none()
+            if repo and "/" in repo:
+                names[str(inst)] = repo.split("/", 1)[0]
+    return names

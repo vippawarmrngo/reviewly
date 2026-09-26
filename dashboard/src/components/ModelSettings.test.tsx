@@ -155,9 +155,22 @@ describe("already configured", () => {
     mockApi({ [`GET ${LLM}`]: () => json(llmOpenAI), [`DELETE ${LLM}`]: () => json(llmNone) });
     render(<ModelSettings installation={42} />);
     await userEvent.click(await screen.findByRole("button", { name: /remove/i }));
+    await userEvent.click(screen.getByRole("button", { name: "Yes, remove" }));
     expect(await screen.findByText("Using Reviewly's built-in models")).toBeInTheDocument();
     expect(screen.getByText(/Removed\./)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /remove/i })).not.toBeInTheDocument();
+  });
+
+  it("asks before removing the key, and Cancel deletes nothing", async () => {
+    const fetchMock = mockApi({ [`GET ${LLM}`]: () => json(llmOpenAI), [`DELETE ${LLM}`]: () => json(llmNone) });
+    render(<ModelSettings installation={42} />);
+    await userEvent.click(await screen.findByRole("button", { name: /remove/i }));
+    expect(screen.getByRole("group", { name: "Confirm removing the key" })).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalledWith(LLM, expect.objectContaining({ method: "DELETE" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("group", { name: "Confirm removing the key" })).not.toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalledWith(LLM, expect.objectContaining({ method: "DELETE" }));
+    expect(screen.getByRole("button", { name: /remove/i })).toBeInTheDocument();
   });
 });
 

@@ -143,9 +143,16 @@ open "http://localhost:8000/auth/dev-login?installation=42"
 `dev-login` exists only when `REVIEWLY_ENV=dev` and `REVIEWLY_DASHBOARD_DEV_LOGIN=true`; the app refuses to start outside dev
 with placeholder secrets or with dev login on. Frontend work: `make dashboard-dev` (Vite, proxies to :8000) and `make dashboard-test`.
 
-**The dashboard** is one page, black on white (white on black in dark mode, following the system until you press the toggle):
-summary tiles, plan and usage, precision by rule, reviews per month (with a table view), repositories, and recent reviews.
+**The dashboard** has two views, grey and white (dark mode follows the system until you press the toggle). *Overview*: summary tiles,
+precision by rule, reviews per month (with a table view), repositories, and recent reviews (each linking to its PR; the page refreshes
+itself every 20 s while a review is running). *Settings*: plan and usage, and the AI model / your own key. It has loading skeletons,
+retry on errors, an error boundary, a skip link and keyboard focus handling. Installations are named after the account they were used on.
 Every query is scoped to one installation, and another tenant's installation returns 404.
+
+**Web hardening.** Strict Content-Security-Policy (own scripts only, no framing), `nosniff`, referrer and permissions policies, HSTS
+in production, `Origin` checking on state-changing dashboard requests (on top of `SameSite=Lax` cookies), `no-store` on API answers,
+year-long immutable caching for hashed assets, gzip. Checked in a real headless Chromium at desktop and phone widths in light and
+dark mode (no console errors, no horizontal overflow); this is a manual check, not part of CI.
 
 **Feedback loop.** Reviewly learns what maintainers think of its comments from:
 - a reply `@reviewly dismiss` or `@reviewly accept` (a deliberate command always outranks reactions),

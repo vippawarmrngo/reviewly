@@ -5,14 +5,19 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from app.api.auth import current_session, require_installation, settings_of
 from app.billing.stripe import StripeClient, StripeError
 from app.core.session import Session
-from app.dashboard.queries import findings_page, overview
+from app.dashboard.queries import findings_page, installation_names, overview
 
 router = APIRouter(prefix="/api")
 
 
 @router.get("/me")
-async def me(session: Session = Depends(current_session)) -> dict[str, Any]:
-    return {"login": session.login, "installations": sorted(session.installations)}
+async def me(request: Request, session: Session = Depends(current_session)) -> dict[str, Any]:
+    ids = sorted(session.installations)
+    return {
+        "login": session.login,
+        "installations": ids,
+        "names": await installation_names(request.app.state.sessionmaker, ids),
+    }
 
 
 @router.get("/installations/{installation_id}/overview")

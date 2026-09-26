@@ -96,4 +96,5 @@ export interface PublicConfig {
 export interface Me {
   login: string;
   installations: number[];
+  names?: Record<string, string>; // account name per installation id, once it has been used
 }

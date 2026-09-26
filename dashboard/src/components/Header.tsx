@@ -4,6 +4,7 @@ import { Icon } from "./Icon";
 
 interface Props {
   installations: number[];
+  names?: Record<string, string>;
   selected: number | null;
   onSelect: (id: number) => void;
   theme: Theme;
@@ -14,7 +15,11 @@ interface Props {
   showNav?: boolean;
 }
 
-export function Header({ installations, selected, onSelect, theme, onToggleTheme, signedIn, login, route, showNav }: Props) {
+export function installationLabel(id: number, names: Record<string, string>): string {
+  return names[String(id)] ?? `Installation ${id}`;
+}
+
+export function Header({ installations, names = {}, selected, onSelect, theme, onToggleTheme, signedIn, login, route, showNav }: Props) {
   return (
     <header className="header">
       <span className="brand">
@@ -36,11 +41,14 @@ export function Header({ installations, selected, onSelect, theme, onToggleTheme
         </nav>
       )}
       <span className="spacer" />
+      {installations.length === 1 && selected !== null && names[String(selected)] && (
+        <span className="who hide-narrow">{names[String(selected)]}</span>
+      )}
       {installations.length > 1 && selected !== null && (
         <select aria-label="Installation" value={selected} onChange={(e) => onSelect(Number(e.target.value))}>
           {installations.map((id) => (
             <option key={id} value={id}>
-              Installation {id}
+              {installationLabel(id, names)}
             </option>
           ))}
         </select>

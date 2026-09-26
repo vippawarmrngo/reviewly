@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
 import { llmNone, overview } from "./fixtures";
@@ -255,12 +255,16 @@ describe("navigation and shell", () => {
     mockApi(loggedIn);
     render(<App />);
     await screen.findByRole("region", { name: "Summary" });
-    window.location.hash = "#/settings";
+    await act(async () => {
+      window.location.hash = "#/settings";
+    });
     expect(await screen.findByRole("region", { name: "AI model" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Plan" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Summary" })).not.toBeInTheDocument();
     expect(document.title).toBe("Settings · Reviewly");
-    window.location.hash = "#/overview";
+    await act(async () => {
+      window.location.hash = "#/overview";
+    });
     expect(await screen.findByRole("region", { name: "Summary" })).toBeInTheDocument();
   });
 
@@ -330,5 +334,72 @@ describe("navigation and shell", () => {
     const { container } = render(<App />);
     await screen.findByRole("region", { name: "Getting started" });
     await waitFor(() => expect(container.querySelectorAll("li.done")).toHaveLength(2));
+  });
+});
+
+describe("production behaviour", () => {
+  const running = { ...overview, recent: [{ ...overview.recent[0], status: "queued", note: null }] };
+
+  it("names installations after their account instead of a bare number", async () => {
+    mockApi({
+      ...loggedIn,
+      "GET /api/me": () => json({ login: "octocat", installations: [42, 7], names: { "42": "acme" } }),
+      "GET /api/installations/7/llm": () => json(llmNone),
+    });
+    render(<App />);
+    const picker = await screen.findByRole("combobox", { name: "Installation" });
+    expect(within(picker).getByRole("option", { name: "acme" })).toBeInTheDocument();
+    expect(within(picker).getByRole("option", { name: "Installation 7" })).toBeInTheDocument();
+  });
+
+  it("shows the account name for a user with a single installation", async () => {
+    mockApi({ ...loggedIn, "GET /api/me": () => json({ login: "octocat", installations: [42], names: { "42": "acme" } }) });
+    render(<App />);
+    await screen.findByRole("region", { name: "Summary" });
+    expect(screen.getByText("acme")).toBeInTheDocument();
+  });
+
+  it("keeps a running review current by refreshing on its own", async () => {
+    let calls = 0;
+    mockApi({ ...loggedIn, "GET /api/installations/42/overview": () => json(++calls === 1 ? running : overview) });
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    try {
+      render(<App />);
+      const recent = await screen.findByRole("region", { name: "Recent reviews" });
+      expect(within(recent).getByText("In progress")).toBeInTheDocument();
+      await vi.advanceTimersByTimeAsync(20_000);
+      await waitFor(() => expect(within(recent).queryByText("In progress")).not.toBeInTheDocument());
+      const after = calls;
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(calls).toBe(after); // nothing is running any more: polling stops
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not poll when nothing is running", async () => {
+    let calls = 0;
+    mockApi({ ...loggedIn, "GET /api/installations/42/overview": () => (calls++, json(overview)) });
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    try {
+      render(<App />);
+      await screen.findByRole("region", { name: "Summary" });
+      await vi.advanceTimersByTimeAsync(120_000);
+      expect(calls).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("moves focus to the page content when the view changes", async () => {
+    mockApi(loggedIn);
+    render(<App />);
+    await screen.findByRole("region", { name: "Summary" });
+    expect(screen.getByRole("main")).not.toHaveFocus(); // not stolen on first load
+    await act(async () => {
+      window.location.hash = "#/settings";
+    });
+    await screen.findByRole("region", { name: "AI model" });
+    await waitFor(() => expect(screen.getByRole("main")).toHaveFocus());
   });
 });
