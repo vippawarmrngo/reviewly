@@ -4,6 +4,10 @@ import { GettingStarted } from "./components/GettingStarted";
 import { Header } from "./components/Header";
 import { Icon } from "./components/Icon";
 import { Login } from "./components/Login";
+import { Landing } from "./components/site/Landing";
+import { Privacy } from "./components/site/Privacy";
+import { SiteFooter } from "./components/site/SiteFooter";
+import { SiteHeader } from "./components/site/SiteHeader";
 import { ModelSettings } from "./components/ModelSettings";
 import { PlanCard } from "./components/PlanCard";
 import { RuleBars } from "./components/RuleBars";
@@ -13,7 +17,7 @@ import { RecentTable, RepoTable, statusOf } from "./components/Tables";
 import { Tile } from "./components/Tile";
 import { UsageChart } from "./components/UsageChart";
 import { compact, int, pct, relativeTime, usd } from "./format";
-import { useRoute } from "./route";
+import { type Route, useRoute } from "./route";
 import { useTheme } from "./theme";
 import type { Me, Overview, PublicConfig } from "./types";
 
@@ -24,7 +28,13 @@ const SUBTITLES = {
   overview: (name?: string) => (name ? `How Reviewly is doing on ${name}'s repositories.` : "How Reviewly is doing on your repositories."),
   settings: () => "Your plan, usage, and which AI model reviews your code.",
 } as const;
-const TITLES = { overview: "Overview", settings: "Settings" } as const;
+const TITLES: Record<Route, string> = {
+  home: "Reviewly · AI code review for GitHub pull requests",
+  privacy: "Data handling · Reviewly",
+  signin: "Sign in · Reviewly",
+  overview: "Overview · Reviewly",
+  settings: "Settings · Reviewly",
+};
 
 export default function App() {
   const [theme, toggleTheme] = useTheme();
@@ -39,9 +49,19 @@ export default function App() {
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const installUrl = config?.app_install_url ?? null;
 
+  // Signed-in people never see the marketing page or the sign-in form; signed-out people never see the app.
+  const signedInNow = session.kind === "ready";
+  const view: Route = signedInNow
+    ? route === "home" || route === "signin"
+      ? "overview"
+      : route
+    : session.kind === "login" && (route === "overview" || route === "settings")
+      ? "signin"
+      : route;
+
   useEffect(() => {
-    document.title = session.kind === "ready" ? `${TITLES[route]} · Reviewly` : "Reviewly";
-  }, [route, session.kind]);
+    document.title = session.kind === "loading" ? "Reviewly" : TITLES[view];
+  }, [view, session.kind]);
 
   useEffect(() => {
     fetchConfig()
@@ -88,7 +108,7 @@ export default function App() {
       return;
     }
     mainRef.current?.focus();
-  }, [route]);
+  }, [route]); // the user's navigation, not the session settling (which also changes `view`)
 
   // While a review is still running, keep the table current without the user pressing Refresh.
   const inProgress = overview?.recent.some((r) => statusOf(r).cls === "queued") ?? false;
@@ -102,7 +122,7 @@ export default function App() {
 
   const signedIn = session.kind === "ready";
   const hasInstallation = signedIn && installation !== null;
-  const shell = (body: React.ReactNode) => (
+  const appShell = (body: React.ReactNode) => (
     <div className="page">
       <a className="skip" href="#main">
         Skip to content
@@ -116,7 +136,7 @@ export default function App() {
         onToggleTheme={toggleTheme}
         signedIn={signedIn}
         login={signedIn ? session.me.login : undefined}
-        route={route}
+        route={view}
         showNav={hasInstallation}
       />
       <main id="main" tabIndex={-1} ref={mainRef}>
@@ -131,10 +151,22 @@ export default function App() {
     </div>
   );
 
-  if (session.kind === "loading") return shell(<Skeleton />);
-  if (session.kind === "login") return shell(<Login config={config} />);
+  const publicShell = (body: React.ReactNode) => (
+    <div className="site-page">
+      <a className="skip" href="#main">
+        Skip to content
+      </a>
+      <SiteHeader theme={theme} onToggleTheme={toggleTheme} installUrl={installUrl} />
+      <main id="main" tabIndex={-1} ref={mainRef}>
+        {body}
+      </main>
+      <SiteFooter installUrl={installUrl} />
+    </div>
+  );
+
+  if (session.kind === "loading") return appShell(<Skeleton />);
   if (session.kind === "error") {
-    return shell(
+    return publicShell(
       <div className="error" role="alert">
         <span>Could not reach the server: {session.message}</span>
         <button className="btn" onClick={() => window.location.reload()}>
@@ -143,8 +175,12 @@ export default function App() {
       </div>,
     );
   }
+  if (session.kind === "login") {
+    return publicShell(view === "privacy" ? <Privacy /> : view === "signin" ? <Login config={config} /> : <Landing config={config} installUrl={installUrl} />);
+  }
+  if (view === "privacy") return appShell(<Privacy />);
   if (installation === null) {
-    return shell(
+    return appShell(
       <div className="center">
         <h1>No installations yet</h1>
         <p>Install the Reviewly GitHub App on a repository, and it will show up here after its first review.</p>
@@ -159,7 +195,8 @@ export default function App() {
   }
 
   const t = overview?.totals;
-  return shell(
+  const appView = view === "settings" ? "settings" : "overview";
+  return appShell(
     <>
       {error && (
         <div className="error" role="alert">
@@ -175,8 +212,8 @@ export default function App() {
         <>
           <div className="toolbar">
             <div>
-              <h1 className="page-title">{TITLES[route]}</h1>
-              <p className="subtitle">{SUBTITLES[route](signedIn ? session.me.names?.[String(installation)] : undefined)}</p>
+              <h1 className="page-title">{appView === "settings" ? "Settings" : "Overview"}</h1>
+              <p className="subtitle">{SUBTITLES[appView](signedIn ? session.me.names?.[String(installation)] : undefined)}</p>
             </div>
             <span className="row">
               <span className="muted" aria-live="polite">
@@ -189,7 +226,7 @@ export default function App() {
             </span>
           </div>
 
-          {route === "overview" ? (
+          {appView === "overview" ? (
             <>
               {t.reviews === 0 && <GettingStarted hasReviews={false} usesOwnKey={ownKey} installUrl={installUrl} />}
 

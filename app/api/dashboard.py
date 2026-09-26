@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from app.api.auth import current_session, require_installation, settings_of
 from app.billing.stripe import StripeClient, StripeError
-from app.core.session import Session
+from app.core.session import COOKIE, Session, read_token
 from app.dashboard.queries import findings_page, installation_names, overview
 
 router = APIRouter(prefix="/api")
@@ -14,6 +14,22 @@ router = APIRouter(prefix="/api")
 async def me(request: Request, session: Session = Depends(current_session)) -> dict[str, Any]:
     ids = sorted(session.installations)
     return {
+        "login": session.login,
+        "installations": ids,
+        "names": await installation_names(request.app.state.sessionmaker, ids),
+    }
+
+
+@router.get("/session")
+async def session_state(request: Request) -> dict[str, Any]:
+    """Who is signed in, answered with 200 either way. The site asks this on every page load, and an
+    anonymous visitor on the public landing page should not trigger a 401 in their browser console."""
+    session = read_token(settings_of(request).dashboard_secret, request.cookies.get(COOKIE))
+    if session is None:
+        return {"signed_in": False}
+    ids = sorted(session.installations)
+    return {
+        "signed_in": True,
         "login": session.login,
         "installations": ids,
         "names": await installation_names(request.app.state.sessionmaker, ids),

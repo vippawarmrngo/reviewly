@@ -16,4 +16,7 @@ async def public_config(request: Request) -> dict[str, Any]:
         "github_login": bool(s.github_oauth_client_id and s.github_oauth_client_secret),
         # local development only: a login that needs no GitHub OAuth app (off unless env is dev)
         "dev_login": bool(s.dashboard_dev_login and s.env == "dev"),
+        # what the public pricing section shows: the real limit, and whether upgrading is possible
+        "free_reviews_per_month": s.free_reviews_per_month,
+        "billing": bool(s.stripe_secret_key and s.stripe_price_id),
     }  # fmt: skip

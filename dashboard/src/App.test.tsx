@@ -26,13 +26,14 @@ afterEach(() => vi.unstubAllGlobals());
 const loggedIn = {
   "GET /api/config": () => json({ app_install_url: null, github_login: true, dev_login: false }),
   "GET /api/installations/42/llm": () => json(llmNone),
-  "GET /api/me": () => json({ login: "octocat", installations: [42] }),
+  "GET /api/session": () => json({ login: "octocat", installations: [42] }),
   "GET /api/installations/42/overview": () => json(overview),
 };
 
 describe("signed out", () => {
   it("shows the sign-in screen when the API says 401", async () => {
-    mockApi({ "GET /api/me": () => new Response("", { status: 401 }) });
+    window.location.hash = "#/signin";
+    mockApi({ "GET /api/session": () => json({ signed_in: false }) });
     render(<App />);
     const link = await screen.findByRole("link", { name: /sign in with github/i });
     expect(link).toHaveAttribute("href", "/auth/github/login");
@@ -40,10 +41,11 @@ describe("signed out", () => {
   });
 
   it("shows a retry when the server is unreachable, not the login screen", async () => {
-    mockApi({ "GET /api/me": () => new Response("bad gateway", { status: 502, statusText: "Bad Gateway" }) });
+    mockApi({ "GET /api/session": () => new Response("bad gateway", { status: 502, statusText: "Bad Gateway" }) });
     render(<App />);
     expect(await screen.findByRole("alert")).toHaveTextContent(/could not reach the server/i);
-    expect(screen.queryByRole("link", { name: /sign in/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /sign in with github/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 1, name: /catch bugs/i })).not.toBeInTheDocument();
   });
 });
 
@@ -138,6 +140,7 @@ describe("signed in", () => {
   });
 
   it("returns to the sign-in screen if the session expires mid-use", async () => {
+    window.location.hash = "#/overview";
     mockApi({ ...loggedIn, "GET /api/installations/42/overview": () => new Response("", { status: 401 }) });
     render(<App />);
     expect(await screen.findByRole("link", { name: /sign in with github/i })).toBeInTheDocument();
@@ -157,7 +160,7 @@ describe("signed in", () => {
 
   it("lets a user with several installations switch between them", async () => {
     const fetchMock = mockApi({
-      "GET /api/me": () => json({ login: "octocat", installations: [42, 7] }),
+      "GET /api/session": () => json({ login: "octocat", installations: [42, 7] }),
       "GET /api/installations/42/overview": () => json(overview),
       "GET /api/installations/42/llm": () => json(llmNone),
       "GET /api/installations/7/llm": () => json(llmNone),
@@ -171,7 +174,7 @@ describe("signed in", () => {
   });
 
   it("says so when the user has no installations", async () => {
-    mockApi({ "GET /api/me": () => json({ login: "octocat", installations: [] }) });
+    mockApi({ "GET /api/session": () => json({ login: "octocat", installations: [] }) });
     render(<App />);
     expect(await screen.findByText("No installations yet")).toBeInTheDocument();
   });
@@ -226,7 +229,7 @@ describe("onboarding and AI model", () => {
   it("offers an Install on GitHub button to a user with no installations, when the app URL is configured", async () => {
     mockApi({
       "GET /api/config": () => json({ app_install_url: "https://github.com/apps/reviewly/installations/new", github_login: true, dev_login: false }),
-      "GET /api/me": () => json({ login: "octocat", installations: [] }),
+      "GET /api/session": () => json({ login: "octocat", installations: [] }),
     });
     render(<App />);
     expect(await screen.findByRole("link", { name: /install on github/i })).toHaveAttribute("href", "https://github.com/apps/reviewly/installations/new");
@@ -276,9 +279,9 @@ describe("navigation and shell", () => {
   });
 
   it("shows no navigation to a signed-out visitor", async () => {
-    mockApi({ "GET /api/me": () => new Response("", { status: 401 }) });
+    mockApi({ "GET /api/session": () => json({ signed_in: false }) });
     render(<App />);
-    await screen.findByRole("link", { name: /sign in with github/i });
+    await screen.findByRole("heading", { level: 1, name: /catch bugs/i });
     expect(screen.queryByRole("navigation", { name: "Main" })).not.toBeInTheDocument();
   });
 
@@ -343,7 +346,7 @@ describe("production behaviour", () => {
   it("names installations after their account instead of a bare number", async () => {
     mockApi({
       ...loggedIn,
-      "GET /api/me": () => json({ login: "octocat", installations: [42, 7], names: { "42": "acme" } }),
+      "GET /api/session": () => json({ login: "octocat", installations: [42, 7], names: { "42": "acme" } }),
       "GET /api/installations/7/llm": () => json(llmNone),
     });
     render(<App />);
@@ -353,7 +356,7 @@ describe("production behaviour", () => {
   });
 
   it("shows the account name for a user with a single installation", async () => {
-    mockApi({ ...loggedIn, "GET /api/me": () => json({ login: "octocat", installations: [42], names: { "42": "acme" } }) });
+    mockApi({ ...loggedIn, "GET /api/session": () => json({ login: "octocat", installations: [42], names: { "42": "acme" } }) });
     render(<App />);
     await screen.findByRole("region", { name: "Summary" });
     expect(screen.getByText("acme")).toBeInTheDocument();
@@ -422,7 +425,7 @@ describe("look and feel", () => {
   });
 
   it("gives the page a plain-language subtitle that names the account", async () => {
-    mockApi({ ...loggedIn, "GET /api/me": () => json({ login: "octocat", installations: [42], names: { "42": "acme" } }) });
+    mockApi({ ...loggedIn, "GET /api/session": () => json({ login: "octocat", installations: [42], names: { "42": "acme" } }) });
     render(<App />);
     expect(await screen.findByText("How Reviewly is doing on acme's repositories.")).toBeInTheDocument();
   });
@@ -433,5 +436,42 @@ describe("look and feel", () => {
     const summary = await screen.findByRole("region", { name: "Summary" });
     expect(within(summary).getByText("Accepted").previousSibling).toHaveClass("good");
     expect(within(summary).getByText("Dismissed").previousSibling).toHaveClass("bad");
+  });
+});
+
+describe("public site", () => {
+  it("shows the landing page to a signed-out visitor and sets the page title", async () => {
+    mockApi({ "GET /api/session": () => json({ signed_in: false }) });
+    render(<App />);
+    expect(await screen.findByRole("heading", { level: 1, name: /catch bugs/i })).toBeInTheDocument();
+    expect(document.title).toMatch(/AI code review for GitHub pull requests/);
+    expect(screen.getByRole("navigation", { name: "Sections" })).toBeInTheDocument();
+  });
+
+  it("shows the data-handling page at #/privacy, signed in or not", async () => {
+    window.location.hash = "#/privacy";
+    mockApi({ "GET /api/session": () => json({ signed_in: false }) });
+    const first = render(<App />);
+    expect(await screen.findByRole("heading", { level: 1, name: "Data handling" })).toBeInTheDocument();
+    first.unmount();
+    mockApi(loggedIn);
+    render(<App />);
+    expect(await screen.findByRole("heading", { level: 1, name: "Data handling" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Main" })).toBeInTheDocument(); // inside the app shell
+  });
+
+  it("never shows the marketing page to a signed-in user", async () => {
+    mockApi(loggedIn);
+    render(<App />);
+    await screen.findByRole("region", { name: "Summary" });
+    expect(screen.queryByRole("heading", { level: 1, name: /catch bugs/i })).not.toBeInTheDocument();
+  });
+
+  it("does not show the app to a signed-out visitor who opens a dashboard link", async () => {
+    window.location.hash = "#/settings";
+    mockApi({ "GET /api/session": () => json({ signed_in: false }) });
+    render(<App />);
+    expect(await screen.findByRole("heading", { level: 1, name: "Sign in to Reviewly" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "AI model" })).not.toBeInTheDocument();
   });
 });

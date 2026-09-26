@@ -25,7 +25,12 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return (await res.json()) as T;
 }
 
-export const fetchMe = () => request<Me>("GET", "/api/me");
+/** Who is signed in. The endpoint answers 200 for everyone, so an anonymous visitor causes no error. */
+export async function fetchMe(): Promise<Me> {
+  const body = await request<Me & { signed_in?: boolean }>("GET", "/api/session");
+  if (body.signed_in === false) throw new Unauthorized();
+  return body;
+}
 export const fetchConfig = () => request<PublicConfig>("GET", "/api/config");
 export const fetchOverview = (installation: number) => request<Overview>("GET", `/api/installations/${installation}/overview`);
 

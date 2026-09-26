@@ -143,6 +143,13 @@ open "http://localhost:8000/auth/dev-login?installation=42"
 `dev-login` exists only when `REVIEWLY_ENV=dev` and `REVIEWLY_DASHBOARD_DEV_LOGIN=true`; the app refuses to start outside dev
 with placeholder secrets or with dev login on. Frontend work: `make dashboard-dev` (Vite, proxies to :8000) and `make dashboard-test`.
 
+**The public site** (`/`, served by the same app): a landing page (what it does, an example review clearly labeled as an example, how it works,
+features, security, pricing that shows the server's real free allowance, an FAQ that states the measured accuracy with its caveats), a
+*Data handling* page describing what the software does with data (behaviour, not a legal policy: an operator must supply their own terms),
+sign-in, and a shared header and footer. It makes no claims it cannot back (no customer logos, uptime numbers or compliance badges). Signed-in
+users go straight to the dashboard. The page asks `/api/session`, which answers 200 whether or not you are signed in, so anonymous visitors
+cause no console errors. Not done: an Open Graph preview image, a sitemap, and any translation.
+
 **The dashboard** has two views, grey and white (dark mode follows the system until you press the toggle). *Overview*: summary tiles,
 precision by rule, reviews per month (with a table view), repositories, and recent reviews (each linking to its PR; the page refreshes
 itself every 20 s while a review is running). *Settings*: plan and usage, and the AI model / your own key. It has loading skeletons,

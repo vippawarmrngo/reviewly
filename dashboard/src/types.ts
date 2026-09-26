@@ -91,6 +91,8 @@ export interface PublicConfig {
   app_install_url: string | null;
   github_login: boolean; // GitHub OAuth is configured on the server
   dev_login: boolean; // local development only
+  free_reviews_per_month?: number; // 0 = unlimited
+  billing?: boolean; // upgrading to Pro is possible
 }
 
 export interface Me {

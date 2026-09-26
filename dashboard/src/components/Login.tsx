@@ -14,29 +14,12 @@ export function Login({ config, error }: { config: PublicConfig | null; error?: 
   }
 
   return (
-    <div className="landing">
+    <div className="signin">
       <span className="mark">
-        <Icon name="check" size={24} />
+        <Icon name="check" size={22} />
       </span>
-      <h1>AI code review for every pull request</h1>
-      <p className="lead">Reviewly reads each diff and posts one focused review with inline comments and suggested fixes. Sign in to see how it is doing.</p>
-      <ul className="features">
-        <li>
-          <div className="tile-icon"><Icon name="zap" size={15} /></div>
-          <strong>Just install it</strong>
-          <span className="d">Open a pull request and a review shows up, usually within a minute.</span>
-        </li>
-        <li>
-          <div className="tile-icon good"><Icon name="target" size={15} /></div>
-          <strong>Learns your team</strong>
-          <span className="d">Accept or dismiss a comment and it stops repeating what you don't want.</span>
-        </li>
-        <li>
-          <div className="tile-icon neutral"><Icon name="key" size={15} /></div>
-          <strong>Bring your own model</strong>
-          <span className="d">Use your own API key from OpenAI, Anthropic, Gemini and more.</span>
-        </li>
-      </ul>
+      <h1>Sign in to Reviewly</h1>
+      <p className="muted">See your reviews, findings and precision. New here? Install the GitHub App from the home page first.</p>
 
       {githubReady ? (
         <a className="btn primary" href="/auth/github/login">

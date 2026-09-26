@@ -2,12 +2,15 @@ import { parseRoute } from "./route";
 
 describe("parseRoute", () => {
   it.each([
-    ["", "overview"],
+    ["", "home"],
+    ["#/", "home"],
     ["#/overview", "overview"],
     ["#/settings", "settings"],
-    ["#/settings/extra", "overview"],
-    ["#settings", "overview"],
-    ["#/<script>", "overview"],
+    ["#/privacy", "privacy"],
+    ["#/signin", "signin"],
+    ["#/settings/extra", "home"],
+    ["#settings", "home"],
+    ["#/<script>", "home"],
   ])("%j -> %s", (hash, expected) => {
     expect(parseRoute(hash)).toBe(expected);
   });

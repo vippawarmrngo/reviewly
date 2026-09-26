@@ -52,11 +52,10 @@ describe("Login", () => {
   });
 });
 
-describe("Login landing", () => {
-  it("says what the product does before asking anyone to sign in", () => {
+describe("Login page", () => {
+  it("is a compact sign-in card that points new visitors back to the home page", () => {
     render(<Login config={cfg()} />);
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/AI code review/i);
-    expect(screen.getByText("Just install it")).toBeInTheDocument();
-    expect(screen.getByText("Bring your own model")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Sign in to Reviewly");
+    expect(screen.getByText(/install the GitHub App from the home page/i)).toBeInTheDocument();
   });
 });
