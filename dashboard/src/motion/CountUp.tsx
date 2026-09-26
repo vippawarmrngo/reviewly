@@ -27,6 +27,8 @@ export function CountUp({ value, format = (n) => String(Math.round(n)), duration
     return () => controls.stop();
   }, [ok, inView, value, duration]);
 
+  // While counting, screen readers get the final value at once; the moving digits are hidden from them.
+  if (shown === value) return <span ref={ref}>{format(value)}</span>;
   return (
     <span ref={ref}>
       <span aria-hidden="true">{format(shown)}</span>

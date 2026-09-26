@@ -1,9 +1,10 @@
 import { compact, int, pct, relativeTime, usd } from "../format";
 import type { RecentReview, RepoRow } from "../types";
+import { EmptyState } from "./EmptyState";
 import { Icon, type IconName } from "./Icon";
 
 export function RepoTable({ repos }: { repos: RepoRow[] }) {
-  if (repos.length === 0) return <div className="empty">No repositories with findings yet.</div>;
+  if (repos.length === 0) return <EmptyState title="No repositories with findings yet." hint="They appear here after Reviewly comments on a pull request." />;
   return (
     <div className="table-wrap card">
       <table>
@@ -46,7 +47,7 @@ export function statusOf(r: RecentReview): { word: string; cls: string; icon: Ic
 }
 
 export function RecentTable({ recent, now }: { recent: RecentReview[]; now?: Date }) {
-  if (recent.length === 0) return <div className="empty">No reviews yet.</div>;
+  if (recent.length === 0) return <EmptyState title="No reviews yet." hint="Open a pull request on a repository where Reviewly is installed." />;
   return (
     <div className="table-wrap card">
       <table>

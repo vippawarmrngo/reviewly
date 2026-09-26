@@ -1,12 +1,13 @@
 import { int, pct, precisionTone } from "../format";
 import type { Rule } from "../types";
+import { EmptyState } from "./EmptyState";
 import { Icon, categoryIcon } from "./Icon";
 import { Meter } from "./Meter";
 
 /** Precision per rule: of the findings people judged, the share they accepted. */
 export function RuleBars({ rules }: { rules: Rule[] }) {
   if (rules.length === 0) {
-    return <div className="empty">No findings yet. Open a pull request on a repository where Reviewly is installed.</div>;
+    return <EmptyState title="No findings yet." hint="Open a pull request on a repository where Reviewly is installed." />;
   }
   const anyJudged = rules.some((r) => r.accepted + r.dismissed > 0);
   return (

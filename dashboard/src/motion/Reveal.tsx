@@ -10,19 +10,26 @@ interface Props {
   y?: number;
   className?: string;
   as?: "div" | "li" | "section";
+  /** Accessible name, for a section that should be a landmark. */
+  label?: string;
 }
 
 /** Fades content in the first time it scrolls into view. With motion off it is just the content. */
-export function Reveal({ children, delay = 0, y = 16, className, as = "div" }: Props) {
+export function Reveal({ children, delay = 0, y = 16, className, as = "div", label }: Props) {
   const ok = useMotionOk();
   if (!ok) {
     const Tag = as;
-    return <Tag className={className}>{children}</Tag>;
+    return (
+      <Tag className={className} aria-label={label}>
+        {children}
+      </Tag>
+    );
   }
   const Component = m[as];
   return (
     <Component
       className={className}
+      aria-label={label}
       initial={{ opacity: 0, y }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "0px 0px -8% 0px" }}

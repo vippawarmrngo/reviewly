@@ -547,3 +547,37 @@ describe("information pages", () => {
     }
   });
 });
+
+describe("dashboard polish", () => {
+  it("confirms a manual refresh with a toast, and reports a failed one", async () => {
+    let calls = 0;
+    mockApi({
+      ...loggedIn,
+      "GET /api/installations/42/overview": () => (++calls === 3 ? new Response("", { status: 500, statusText: "Server Error" }) : json(overview)),
+    });
+    render(<App />);
+    await screen.findByRole("region", { name: "Summary" });
+    await userEvent.click(screen.getByRole("button", { name: "Refresh data" }));
+    expect(await screen.findByText("Dashboard updated")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Refresh data" }));
+    expect(await screen.findByText("Could not refresh. Try again.")).toBeInTheDocument();
+  });
+
+  it("does not toast for the automatic refresh", async () => {
+    mockApi(loggedIn);
+    render(<App />);
+    await screen.findByRole("region", { name: "Summary" });
+    expect(screen.queryByText("Dashboard updated")).not.toBeInTheDocument(); // the first load is silent
+  });
+
+  it("shows friendly empty states with a next step", async () => {
+    mockApi({
+      ...loggedIn,
+      "GET /api/installations/42/overview": () => json({ ...overview, totals: { ...overview.totals, reviews: 0, precision: null }, rules: [], repos: [], recent: [], usage: [] }),
+    });
+    render(<App />);
+    expect(await screen.findByText("No reviews yet.")).toBeInTheDocument();
+    expect(screen.getAllByText(/Open a pull request on a repository where Reviewly is installed/).length).toBeGreaterThan(0);
+    expect(screen.getByText("No repositories with findings yet.")).toBeInTheDocument();
+  });
+});

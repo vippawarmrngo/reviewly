@@ -1,23 +1,17 @@
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { Unauthorized, fetchConfig, fetchLLM, fetchMe, fetchOverview } from "./api";
-import { GettingStarted } from "./components/GettingStarted";
 import { Header } from "./components/Header";
 import { Icon } from "./components/Icon";
 import { Login } from "./components/Login";
 import { Link } from "./components/Link";
+import { ToastProvider, useToast } from "./components/Toast";
 import { Landing } from "./components/site/Landing";
 import { NotFound } from "./components/site/NotFound";
 import { SiteFooter } from "./components/site/SiteFooter";
 import { SiteHeader } from "./components/site/SiteHeader";
-import { ModelSettings } from "./components/ModelSettings";
-import { PlanCard } from "./components/PlanCard";
-import { RuleBars } from "./components/RuleBars";
-import { SectionTitle } from "./components/SectionTitle";
 import { Skeleton } from "./components/Skeleton";
-import { RecentTable, RepoTable, statusOf } from "./components/Tables";
-import { Tile } from "./components/Tile";
-import { UsageChart } from "./components/UsageChart";
-import { compact, int, pct, relativeTime, usd } from "./format";
+import { statusOf } from "./components/Tables";
+
 import { PageTransition } from "./motion/PageTransition";
 import { type Route, navigate, pathOf, useRoute } from "./route";
 import { useTheme } from "./theme";
@@ -30,6 +24,7 @@ const Privacy = lazy(() => import("./components/site/Privacy").then((m) => ({ de
 const Docs = lazy(() => import("./components/site/Docs"));
 const Changelog = lazy(() => import("./components/site/Changelog"));
 const Status = lazy(() => import("./components/site/Status"));
+const Dashboard = lazy(() => import("./views/Dashboard"));
 
 const INFO_PAGES: Partial<Record<Route, React.ReactNode>> = {
   privacy: <Privacy />,
@@ -60,7 +55,7 @@ const TITLES: Record<Route, string> = {
   notfound: "Page not found · Reviewly",
 };
 
-export default function App() {
+function AppInner() {
   const [theme, toggleTheme] = useTheme();
   const [route] = useRoute();
   const [session, setSession] = useState<Session>({ kind: "loading" });
@@ -105,19 +100,29 @@ export default function App() {
       .catch((e) => setSession(e instanceof Unauthorized ? { kind: "login" } : { kind: "error", message: String(e.message ?? e) }));
   }, []);
 
-  const load = useCallback(async (id: number) => {
+  const load = useCallback(async (id: number): Promise<boolean> => {
     setError(null);
     setRefreshing(true);
     try {
       setOverview(await fetchOverview(id));
       setUpdatedAt(new Date());
+      return true;
     } catch (e) {
       if (e instanceof Unauthorized) setSession({ kind: "login" });
       else setError(e instanceof Error ? e.message : "Something went wrong.");
+      return false;
     } finally {
       setRefreshing(false);
     }
   }, []);
+
+  const toast = useToast();
+  /** The Refresh button: reload, then say how it went without moving the page. */
+  const refresh = useCallback(async () => {
+    if (installation === null) return;
+    const ok = await load(installation);
+    toast(ok ? "Dashboard updated" : "Could not refresh. Try again.", ok ? "ok" : "error");
+  }, [installation, load, toast]);
 
   useEffect(() => {
     if (installation === null) return;
@@ -236,7 +241,6 @@ export default function App() {
     );
   }
 
-  const t = overview?.totals;
   const appView = view === "settings" ? "settings" : "overview";
   return appShell(
     <>
@@ -250,79 +254,27 @@ export default function App() {
       )}
       {!overview && !error && <Skeleton />}
 
-      {overview && t && (
-        <>
-          <div className="toolbar">
-            <div>
-              <h1 className="page-title">{appView === "settings" ? "Settings" : "Overview"}</h1>
-              <p className="subtitle">{SUBTITLES[appView](signedIn ? session.me.names?.[String(installation)] : undefined)}</p>
-            </div>
-            <span className="row">
-              <span className="muted" aria-live="polite">
-                {updatedAt ? `Updated ${relativeTime(updatedAt.toISOString()) || "just now"}` : ""}
-              </span>
-              <button className="btn" onClick={() => void load(installation)} disabled={refreshing} aria-label="Refresh data">
-                <Icon name="refresh" size={14} />
-                <span className="hide-narrow">{refreshing ? "Refreshing…" : "Refresh"}</span>
-              </button>
-            </span>
-          </div>
-
-          {appView === "overview" ? (
-            <>
-              {t.reviews === 0 && <GettingStarted hasReviews={false} usesOwnKey={ownKey} installUrl={installUrl} />}
-
-              <section aria-label="Summary">
-                <SectionTitle icon="grid">Summary</SectionTitle>
-                <div className="tiles">
-                  <Tile icon="check-circle" label="Reviews" value={int(t.reviews)} />
-                  <Tile icon="git-pull-request" label="Pull requests" value={int(t.prs)} />
-                  <Tile icon="message-square" label="Findings posted" value={int(t.findings)} />
-                  <Tile icon="target" label="Precision" value={pct(t.precision)} hint={t.precision === null ? "No feedback yet" : "Accepted of judged"} />
-                  <Tile icon="thumbs-up" label="Accepted" value={int(t.accepted)} tone="good" />
-                  <Tile icon="thumbs-down" label="Dismissed" value={int(t.dismissed)} tone="bad" />
-                  <Tile icon="cpu" label="Tokens" value={compact(t.tokens)} tone="neutral" />
-                  <Tile icon="coins" label="Cost" value={usd(t.cost_usd)} hint={t.cost_usd ? undefined : "No verified price yet"} tone="neutral" />
-                </div>
-              </section>
-
-              <section aria-label="Precision by rule">
-                <SectionTitle icon="target">Precision by rule</SectionTitle>
-                <p className="sub">Of the findings people judged, the share they accepted.</p>
-                <RuleBars rules={overview.rules} />
-              </section>
-
-              <section aria-label="Monthly usage">
-                <SectionTitle icon="calendar">Reviews per month</SectionTitle>
-                <UsageChart rows={overview.usage} />
-              </section>
-
-              <section aria-label="Repositories">
-                <SectionTitle icon="folder">Repositories</SectionTitle>
-                <RepoTable repos={overview.repos} />
-              </section>
-
-              <section aria-label="Recent reviews">
-                <SectionTitle icon="clock">Recent reviews</SectionTitle>
-                <RecentTable recent={overview.recent} />
-              </section>
-            </>
-          ) : (
-            <>
-              <section aria-label="Plan">
-                <SectionTitle icon="credit-card">Plan and usage</SectionTitle>
-                <PlanCard plan={overview.plan} period={overview.period} installation={overview.installation_id} />
-              </section>
-
-              <section aria-label="AI model">
-                <SectionTitle icon="cpu">AI model</SectionTitle>
-                <p className="sub">Reviews use Reviewly's models unless you add your own key.</p>
-                <ModelSettings installation={overview.installation_id} onChange={setOwnKey} />
-              </section>
-            </>
-          )}
-        </>
+      {overview && (
+        <Dashboard
+          overview={overview}
+          view={appView}
+          subtitle={SUBTITLES[appView](signedIn ? session.me.names?.[String(installation)] : undefined)}
+          updatedAt={updatedAt}
+          refreshing={refreshing}
+          onRefresh={() => void refresh()}
+          ownKey={ownKey}
+          onOwnKeyChange={setOwnKey}
+          installUrl={installUrl}
+        />
       )}
     </>,
+  );
+}
+
+export default function App() {
+  return (
+    <ToastProvider>
+      <AppInner />
+    </ToastProvider>
   );
 }

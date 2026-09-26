@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { compact, int, monthLabel, usd } from "../format";
 import type { UsageRow } from "../types";
+import { EmptyState } from "./EmptyState";
 import { Icon } from "./Icon";
 import { Tooltip, useTooltip } from "./Tooltip";
 
@@ -15,7 +16,7 @@ export function barHeight(value: number, max: number): number {
 export function UsageChart({ rows }: { rows: UsageRow[] }) {
   const [asTable, setAsTable] = useState(false);
   const { tip, show, hide } = useTooltip();
-  if (rows.length === 0) return <div className="empty">No usage yet.</div>;
+  if (rows.length === 0) return <EmptyState title="No usage yet." hint="Monthly review counts show up after the first review." />;
   const max = Math.max(1, ...rows.map((r) => r.reviews));
 
   return (

@@ -109,7 +109,9 @@ describe("CountUp", () => {
     await act(async () => {
       observers.forEach((o) => o.show());
     });
-    expect(container.querySelector("[aria-hidden]")).toHaveTextContent("84%");
+    expect(container).toHaveTextContent("84%");
+    expect(container.querySelector("[aria-hidden]")).toBeNull(); // finished: one plain text node, nothing duplicated
+    expect(container.querySelector(".sr-only")).toBeNull();
   });
 
   it("formats with the supplied function", () => {
