@@ -122,7 +122,7 @@ describe("signed in", () => {
     mockApi(loggedIn);
     render(<App />);
     const usage = await screen.findByRole("region", { name: "Monthly usage" });
-    expect(within(usage).getByRole("img")).toHaveAccessibleName(/Sep 2026: 3/);
+    expect(within(usage).getByRole("group", { name: /Sep 2026: 3/ })).toBeInTheDocument();
     await userEvent.click(within(usage).getByRole("button", { name: "Show as table" }));
     expect(within(usage).getByRole("table")).toBeInTheDocument();
     expect(within(usage).getByText("Aug 2026")).toBeInTheDocument();

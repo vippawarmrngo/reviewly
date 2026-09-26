@@ -285,7 +285,7 @@ main:focus { outline: none; } /* focus moves here on navigation; it is a landmar
 .plan-card li { display: flex; gap: 8px; align-items: flex-start; font-size: 13.5px; color: var(--ink-2); }
 .plan-card li .icon { color: var(--good); margin-top: 3px; }
 .plan-card .btn { justify-content: center; text-decoration: none; }
-.muted-card { opacity: 0.85; }
+.muted-card { border-style: dashed; } /* not opacity: dimming text would lower its contrast */
 .cta-band { margin: 84px 0 0; padding: 44px 24px; text-align: center; display: grid; justify-items: center; gap: 4px; background: linear-gradient(135deg, var(--accent-soft), var(--card)); }
 .cta-band h2 { display: block; text-transform: none; letter-spacing: -0.025em; font-size: 28px; color: var(--ink); margin: 0; }
 .cta-band .btn { margin-top: 14px; }
@@ -392,6 +392,8 @@ main:focus { outline: none; } /* focus moves here on navigation; it is a landmar
 .diff { padding: 10px 0; font: 12.5px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; min-height: 106px; }
 .dl { display: flex; white-space: pre; padding: 0 14px; }
 .dl.add { background: var(--good-soft); color: var(--good); }
+.dl.add .ln { color: var(--good); }
+.dl.bad .ln { color: var(--bad); }
 .dl.bad { background: var(--bad-soft); color: var(--bad); }
 .thinking { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 13px; }
 .spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line-strong); border-top-color: var(--accent); }

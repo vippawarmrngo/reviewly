@@ -1,12 +1,13 @@
 import { compact, int, pct, relativeTime, usd } from "../format";
 import type { RecentReview, RepoRow } from "../types";
 import { EmptyState } from "./EmptyState";
+import { ScrollBox } from "./ScrollBox";
 import { Icon, type IconName } from "./Icon";
 
 export function RepoTable({ repos }: { repos: RepoRow[] }) {
   if (repos.length === 0) return <EmptyState title="No repositories with findings yet." hint="They appear here after Reviewly comments on a pull request." />;
   return (
-    <div className="table-wrap card">
+    <ScrollBox label="Repositories table">
       <table>
         <thead>
           <tr>
@@ -34,7 +35,7 @@ export function RepoTable({ repos }: { repos: RepoRow[] }) {
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollBox>
   );
 }
 
@@ -49,7 +50,7 @@ export function statusOf(r: RecentReview): { word: string; cls: string; icon: Ic
 export function RecentTable({ recent, now }: { recent: RecentReview[]; now?: Date }) {
   if (recent.length === 0) return <EmptyState title="No reviews yet." hint="Open a pull request on a repository where Reviewly is installed." />;
   return (
-    <div className="table-wrap card">
+    <ScrollBox label="Recent reviews table">
       <table>
         <thead>
           <tr>
@@ -87,6 +88,6 @@ export function RecentTable({ recent, now }: { recent: RecentReview[]; now?: Dat
           })}
         </tbody>
       </table>
-    </div>
+    </ScrollBox>
   );
 }

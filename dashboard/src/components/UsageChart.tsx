@@ -2,6 +2,7 @@ import { useState } from "react";
 import { compact, int, monthLabel, usd } from "../format";
 import type { UsageRow } from "../types";
 import { EmptyState } from "./EmptyState";
+import { ScrollBox } from "./ScrollBox";
 import { Icon } from "./Icon";
 import { Tooltip, useTooltip } from "./Tooltip";
 
@@ -28,7 +29,7 @@ export function UsageChart({ rows }: { rows: UsageRow[] }) {
         </button>
       </div>
       {asTable ? (
-        <div className="table-wrap card">
+        <ScrollBox label="Monthly usage table">
           <table>
             <thead>
               <tr>
@@ -51,9 +52,9 @@ export function UsageChart({ rows }: { rows: UsageRow[] }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollBox>
       ) : (
-        <div className="chart card" role="img" aria-label={`Reviews per month, ${rows.map((r) => `${monthLabel(r.period)}: ${r.reviews}`).join(", ")}`}>
+        <div className="chart card" role="group" aria-label={`Reviews per month, ${rows.map((r) => `${monthLabel(r.period)}: ${r.reviews}`).join(", ")}`}>
           {rows.map((r) => {
             const label = `${monthLabel(r.period)}: ${int(r.reviews)} reviews, ${int(r.findings)} findings, ${compact(r.tokens)} tokens`;
             return (

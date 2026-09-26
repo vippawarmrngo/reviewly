@@ -48,3 +48,13 @@ machines x `WEB_CONCURRENCY` x 10 plus the worker must stay under the database l
 - Encryption key: set `REVIEWLY_ENCRYPTION_KEY=<new>,<old>` (first encrypts, all decrypt), deploy, later drop the old one.
 - Webhook secret: change it in the GitHub App settings and in both apps at the same time; deliveries fail with
   `bad_signature` in between.
+
+## The public site
+- Routes: `/`, `/docs`, `/changelog`, `/status`, `/privacy`, `/signin`, `/app`, `/app/settings`. The server (`app/core/site.py`) answers them all with `index.html`, filling
+  in each page's title, description, canonical URL and social tags from `REVIEWLY_PUBLIC_URL`. **If it is wrong or unset, canonical links, the sitemap and the social preview
+  point at `http://localhost:8000`.** Unknown paths return a real 404 (with the site's not-found page); `/api`, `/auth`, `/webhooks`, `/assets` and friends are never answered with HTML.
+- The API's interactive docs are at `/api/docs` (not `/docs`, which is the site's).
+- `/status` reads `/readyz` in the visitor's browser; it shows the current state only.
+- After changing the dashboard: `cd dashboard && npm run build && npm run size`. Brand images: `node scripts/render_brand.mjs` (needs Playwright). Browser audits: `scripts/audit.mjs`,
+  `scripts/lighthouse.mjs` (dev-only, need a running server and a browser).
+- Editing docs facts: change `dashboard/src/content/behavior.json` (or `reviewly.example.yml`, `providers.json`) together with the code; `tests/test_docs_content.py` fails if they disagree.

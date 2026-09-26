@@ -16,7 +16,9 @@ export function CodeBlock({ code, label }: { code: string; label: string }) {
   }
   return (
     <div className="codeblock">
-      <pre aria-label={label}>{code}</pre>
+      <pre role="region" aria-label={label} tabIndex={0}>
+        {code}
+      </pre>
       {canCopy && (
         <button type="button" className="btn copy" onClick={copy} aria-label={`Copy ${label}`}>
           <Icon name={copied ? "check" : "table"} size={13} />

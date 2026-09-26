@@ -72,3 +72,29 @@ describe("Tile", () => {
     expect(screen.getByText("45K")).toBeInTheDocument(); // motion off in tests: the final number at once
   });
 });
+
+import { ScrollBox } from "./ScrollBox";
+
+describe("ScrollBox", () => {
+  it("is a named, keyboard-focusable region around a sideways-scrolling table", () => {
+    render(
+      <ScrollBox label="Repositories table">
+        <table><tbody><tr><td>x</td></tr></tbody></table>
+      </ScrollBox>,
+    );
+    const region = screen.getByRole("region", { name: "Repositories table" });
+    expect(region).toHaveAttribute("tabindex", "0");
+    expect(region.querySelector("table")).not.toBeNull();
+  });
+});
+
+import { CodeBlock } from "./docs/CodeBlock";
+
+describe("CodeBlock accessibility", () => {
+  it("is a focusable named region so long lines can be scrolled with the keyboard", () => {
+    render(<CodeBlock code="a: 1" label="sample" />);
+    const region = screen.getByRole("region", { name: "sample" });
+    expect(region).toHaveAttribute("tabindex", "0");
+    expect(region).toHaveTextContent("a: 1");
+  });
+});

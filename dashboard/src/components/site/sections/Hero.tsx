@@ -9,21 +9,16 @@ export function Hero({ cta, free }: { cta: ReactNode; free: number | undefined }
     <div className="hero">
       <div className="hero-glow" aria-hidden="true" />
       <div className="hero-copy">
-        <Reveal y={10}>
-          <span className="pill accent">
-            <Icon name="zap" size={12} />
-            GitHub App · works with your own AI key
-          </span>
-        </Reveal>
-        <Reveal delay={0.05}>
-          <h1>Catch bugs in pull requests before your teammates have to</h1>
-        </Reveal>
-        <Reveal delay={0.1}>
-          <p className="site-lead">
-            Reviewly reads every pull request and posts one focused review: inline comments on the exact lines, with suggested fixes. It stays
-            quiet when there is nothing to say.
-          </p>
-        </Reveal>
+        <span className="pill accent">
+          <Icon name="zap" size={12} />
+          GitHub App · works with your own AI key
+        </span>
+        {/* The headline and lead are the first thing painted: no fade, so they are never held back by an animation. */}
+        <h1>Catch bugs in pull requests before your teammates have to</h1>
+        <p className="site-lead">
+          Reviewly reads every pull request and posts one focused review: inline comments on the exact lines, with suggested fixes. It stays
+          quiet when there is nothing to say.
+        </p>
         <Reveal delay={0.15}>
           <div className="hero-cta">
             {cta}

@@ -4,6 +4,7 @@ import behavior from "../../content/behavior.json";
 import providers from "../../content/providers.json";
 import { useScrollSpy } from "../../motion/useScrollSpy";
 import { CodeBlock } from "../docs/CodeBlock";
+import { ScrollBox } from "../ScrollBox";
 import { Icon } from "../Icon";
 import { Link } from "../Link";
 
@@ -88,7 +89,7 @@ export default function Docs() {
 
         <H2 id="teach">Teaching Reviewly</H2>
         <p>Reply to any Reviewly comment, or react to it:</p>
-        <div className="table-wrap card">
+        <ScrollBox label="Reply words and reactions">
           <table>
             <thead>
               <tr>
@@ -110,7 +111,7 @@ export default function Docs() {
               </tr>
             </tbody>
           </table>
-        </div>
+        </ScrollBox>
         <ul>
           <li>Replies count at once. Reactions are picked up about every 10 minutes, because GitHub does not announce them.</li>
           <li>A reply beats a reaction. Resolving a thread is shown in the dashboard but does not count as feedback.</li>
@@ -123,7 +124,7 @@ export default function Docs() {
           never from the pull request itself, so a change cannot loosen its own review.
         </p>
         <CodeBlock code={exampleConfig} label=".reviewly.yml example" />
-        <div className="table-wrap card">
+        <ScrollBox label="Configuration fields">
           <table>
             <thead>
               <tr>
@@ -139,7 +140,7 @@ export default function Docs() {
               <tr><td><code>rules</code></td><td>Your own rules, in plain language, checked on every review.</td><td>up to {behavior.config.rules_max}, {behavior.config.rule_chars} characters each</td></tr>
             </tbody>
           </table>
-        </div>
+        </ScrollBox>
         <p>
           <strong>Strictness works like a confidence bar.</strong> <code>low</code> only reports findings it is very sure about (at least {Math.round(behavior.strictness.low * 100)}%), <code>medium</code> needs{" "}
           {Math.round(behavior.strictness.medium * 100)}%, and <code>high</code> also reports findings it is less sure about ({Math.round(behavior.strictness.high * 100)}%), so you get more comments. If the file is not valid YAML, or a value is out of range, the review runs with
@@ -152,7 +153,7 @@ export default function Docs() {
           <li>Choose a provider, type the model name exactly as your provider spells it, and paste your key.</li>
           <li>Press <em>Save and test key</em>. Reviewly makes one real call first; a key that does not work is never saved.</li>
         </ol>
-        <div className="table-wrap card">
+        <ScrollBox label="Providers and where to get a key">
           <table>
             <thead>
               <tr>
@@ -177,7 +178,7 @@ export default function Docs() {
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollBox>
         <ul>
           <li>Your key is encrypted, never shown again (only its last four characters), and used only to review your repositories.</li>
           <li>Your code goes to the provider you chose, not to Reviewly's models. If your key stops working, the pull request gets a notice; there is no silent fallback to another model.</li>
@@ -186,7 +187,7 @@ export default function Docs() {
 
         <H2 id="skips">Why a pull request gets no review</H2>
         <p>The dashboard shows these as <em>Skipped</em>, with the reason:</p>
-        <div className="table-wrap card">
+        <ScrollBox label="Reasons a review is skipped">
           <table>
             <thead>
               <tr>
@@ -203,7 +204,7 @@ export default function Docs() {
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollBox>
         <p>
           Still stuck? Check the <Link className="inline-link" to="/status">status page</Link>, then read <Link className="inline-link" to="/privacy">data handling</Link> for what is sent where.
         </p>

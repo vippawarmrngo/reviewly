@@ -31,7 +31,7 @@ describe("UsageChart", () => {
   it("labels the value at the top of each column and keeps every value in the accessible name", () => {
     render(<UsageChart rows={rows} />);
     expect(screen.getByText("10")).toBeInTheDocument();
-    expect(screen.getByRole("img")).toHaveAccessibleName(/Aug 2026: 10, Sep 2026: 5/);
+    expect(screen.getByRole("group", { name: /Aug 2026: 10, Sep 2026: 5/ })).toBeInTheDocument();
   });
 
   it("says so when there is no data", () => {
