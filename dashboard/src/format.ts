@@ -53,3 +53,15 @@ export function share(used: number, limit: number | null): number {
   if (!limit) return 0;
   return Math.min(1, used / limit);
 }
+
+/** Precision at or above 80% is good, 50-79% needs attention, below that is poor. Nothing judged: no tone. */
+export function precisionTone(p: number | null): "good" | "warn" | "bad" | undefined {
+  if (p === null) return undefined;
+  return p >= 0.8 ? "good" : p >= 0.5 ? "warn" : "bad";
+}
+
+/** A plan meter turns amber near the limit and red at it. */
+export function usageTone(used: number, limit: number | null): "warn" | "bad" | undefined {
+  if (!limit) return undefined;
+  return used >= limit ? "bad" : used / limit >= 0.9 ? "warn" : undefined;
+}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { startCheckout } from "../api";
-import { int, monthLabel, share } from "../format";
+import { int, monthLabel, share, usageTone } from "../format";
 import type { Plan } from "../types";
 import { Icon } from "./Icon";
 import { Meter } from "./Meter";
@@ -42,7 +42,7 @@ export function PlanCard({ plan, period, installation }: { plan: Plan; period: s
           <span className="pill">Free</span>
           {int(plan.used)} of {int(plan.limit)} reviews used in {monthLabel(period)}
         </div>
-        <Meter value={share(plan.used, plan.limit)} label="Free reviews used this month" />
+        <Meter value={share(plan.used, plan.limit)} label="Free reviews used this month" tone={usageTone(plan.used, plan.limit)} />
         <div className="note">
           {plan.used >= plan.limit
             ? "You have used all your free reviews this month."

@@ -1,4 +1,4 @@
-import { int, pct } from "../format";
+import { int, pct, precisionTone } from "../format";
 import type { Rule } from "../types";
 import { Icon, categoryIcon } from "./Icon";
 import { Meter } from "./Meter";
@@ -20,7 +20,7 @@ export function RuleBars({ rules }: { rules: Rule[] }) {
               </span>
               {r.category}
             </div>
-            <Meter value={r.precision ?? 0} label={`${r.category} precision`} />
+            <Meter value={r.precision ?? 0} label={`${r.category} precision`} tone={precisionTone(r.precision)} />
             <div className="p">{pct(r.precision)}</div>
             <div className="counts">
               {int(r.accepted)} accepted · {int(r.dismissed)} dismissed · {int(r.pending)} not judged yet

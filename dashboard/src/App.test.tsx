@@ -403,3 +403,35 @@ describe("production behaviour", () => {
     await waitFor(() => expect(screen.getByRole("main")).toHaveFocus());
   });
 });
+
+describe("look and feel", () => {
+  it("colours precision by how good it is, with the number beside it", async () => {
+    mockApi(loggedIn);
+    render(<App />);
+    const rules = await screen.findByRole("region", { name: "Precision by rule" });
+    expect(within(rules).getByRole("meter", { name: "bug precision" })).toHaveClass("good"); // 83%
+    expect(within(rules).getByText("83%")).toBeInTheDocument();
+  });
+
+  it("marks a plan that is nearly used up", async () => {
+    window.location.hash = "#/settings";
+    mockApi({ ...loggedIn, "GET /api/installations/42/overview": () => json({ ...overview, plan: { name: "free", limit: 20, used: 19 } }) });
+    render(<App />);
+    const plan = await screen.findByRole("region", { name: "Plan" });
+    expect(within(plan).getByRole("meter")).toHaveClass("warn");
+  });
+
+  it("gives the page a plain-language subtitle that names the account", async () => {
+    mockApi({ ...loggedIn, "GET /api/me": () => json({ login: "octocat", installations: [42], names: { "42": "acme" } }) });
+    render(<App />);
+    expect(await screen.findByText("How Reviewly is doing on acme's repositories.")).toBeInTheDocument();
+  });
+
+  it("tints accepted green and dismissed red, in addition to their labels", async () => {
+    mockApi(loggedIn);
+    render(<App />);
+    const summary = await screen.findByRole("region", { name: "Summary" });
+    expect(within(summary).getByText("Accepted").previousSibling).toHaveClass("good");
+    expect(within(summary).getByText("Dismissed").previousSibling).toHaveClass("bad");
+  });
+});

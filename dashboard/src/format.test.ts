@@ -1,4 +1,4 @@
-import { compact, int, monthLabel, pct, relativeTime, share, usd } from "./format";
+import { precisionTone, usageTone, compact, int, monthLabel, pct, relativeTime, share, usd } from "./format";
 
 describe("pct", () => {
   it("shows null as a dash, never 0%", () => {
@@ -59,5 +59,31 @@ describe("share", () => {
     expect(share(30, 20)).toBe(1);
     expect(share(5, null)).toBe(0);
     expect(share(5, 0)).toBe(0);
+  });
+});
+
+describe("precisionTone", () => {
+  it.each([
+    [null, undefined],
+    [1, "good"],
+    [0.8, "good"],
+    [0.79, "warn"],
+    [0.5, "warn"],
+    [0.49, "bad"],
+    [0, "bad"],
+  ])("%s -> %s", (p, tone) => {
+    expect(precisionTone(p)).toBe(tone);
+  });
+});
+
+describe("usageTone", () => {
+  it("is quiet until 90% of the limit, amber then, and red at the limit", () => {
+    expect(usageTone(17, 20)).toBeUndefined();
+    expect(usageTone(18, 20)).toBe("warn");
+    expect(usageTone(20, 20)).toBe("bad");
+    expect(usageTone(25, 20)).toBe("bad");
+  });
+  it("has no tone for an unlimited plan", () => {
+    expect(usageTone(500, null)).toBeUndefined();
   });
 });

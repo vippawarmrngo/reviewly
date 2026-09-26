@@ -51,3 +51,12 @@ describe("Login", () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe("Login landing", () => {
+  it("says what the product does before asking anyone to sign in", () => {
+    render(<Login config={cfg()} />);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/AI code review/i);
+    expect(screen.getByText("Just install it")).toBeInTheDocument();
+    expect(screen.getByText("Bring your own model")).toBeInTheDocument();
+  });
+});

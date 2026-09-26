@@ -20,6 +20,10 @@ import type { Me, Overview, PublicConfig } from "./types";
 type Session = { kind: "loading" } | { kind: "login" } | { kind: "error"; message: string } | { kind: "ready"; me: Me };
 
 const AUTO_REFRESH_MS = 20_000;
+const SUBTITLES = {
+  overview: (name?: string) => (name ? `How Reviewly is doing on ${name}'s repositories.` : "How Reviewly is doing on your repositories."),
+  settings: () => "Your plan, usage, and which AI model reviews your code.",
+} as const;
 const TITLES = { overview: "Overview", settings: "Settings" } as const;
 
 export default function App() {
@@ -170,7 +174,10 @@ export default function App() {
       {overview && t && (
         <>
           <div className="toolbar">
-            <h1 className="page-title">{TITLES[route]}</h1>
+            <div>
+              <h1 className="page-title">{TITLES[route]}</h1>
+              <p className="subtitle">{SUBTITLES[route](signedIn ? session.me.names?.[String(installation)] : undefined)}</p>
+            </div>
             <span className="row">
               <span className="muted" aria-live="polite">
                 {updatedAt ? `Updated ${relativeTime(updatedAt.toISOString()) || "just now"}` : ""}
@@ -193,10 +200,10 @@ export default function App() {
                   <Tile icon="git-pull-request" label="Pull requests" value={int(t.prs)} />
                   <Tile icon="message-square" label="Findings posted" value={int(t.findings)} />
                   <Tile icon="target" label="Precision" value={pct(t.precision)} hint={t.precision === null ? "No feedback yet" : "Accepted of judged"} />
-                  <Tile icon="thumbs-up" label="Accepted" value={int(t.accepted)} />
-                  <Tile icon="thumbs-down" label="Dismissed" value={int(t.dismissed)} />
-                  <Tile icon="cpu" label="Tokens" value={compact(t.tokens)} />
-                  <Tile icon="coins" label="Cost" value={usd(t.cost_usd)} hint={t.cost_usd ? undefined : "No verified price yet"} />
+                  <Tile icon="thumbs-up" label="Accepted" value={int(t.accepted)} tone="good" />
+                  <Tile icon="thumbs-down" label="Dismissed" value={int(t.dismissed)} tone="bad" />
+                  <Tile icon="cpu" label="Tokens" value={compact(t.tokens)} tone="neutral" />
+                  <Tile icon="coins" label="Cost" value={usd(t.cost_usd)} hint={t.cost_usd ? undefined : "No verified price yet"} tone="neutral" />
                 </div>
               </section>
 

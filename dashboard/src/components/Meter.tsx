@@ -1,9 +1,11 @@
 /** A bar whose fill is the value and whose track is the lighter step behind it. */
-export function Meter({ value, label }: { value: number; label: string }) {
+export type Tone = "good" | "warn" | "bad";
+
+export function Meter({ value, label, tone }: { value: number; label: string; tone?: Tone }) {
   const clamped = Math.max(0, Math.min(1, value));
   return (
     <div
-      className="meter"
+      className={tone ? `meter ${tone}` : "meter"}
       role="meter"
       aria-label={label}
       aria-valuemin={0}
