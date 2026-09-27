@@ -97,7 +97,7 @@ class Settings(BaseSettings):
     github_oauth_client_secret: str | None = None
 
     # Review pipeline
-    prompt_version: str = "v3"  # v3 scored significantly better than v1 (see README, eval/)
+    prompt_version: str = "v3"  # v3 scored significantly better than v1 (see README)
     max_group_chars: int = 12_000  # one LLM call reviews at most this much diff text
     max_review_chars: int = 120_000  # beyond this the review is partial
     review_concurrency: int = 4

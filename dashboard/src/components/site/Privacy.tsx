@@ -1,4 +1,4 @@
-const SOURCE = "https://github.com/vippawar1104/meeting-summarizer";
+const SOURCE = "https://github.com/vipawar1104/reviewly";
 
 /** What the software does with data. It describes behaviour, it is not a legal policy. */
 export function Privacy() {

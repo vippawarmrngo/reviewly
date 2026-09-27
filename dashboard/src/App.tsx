@@ -186,7 +186,7 @@ function AppInner() {
         <Link className="inline-link" to="/changelog">Changelog</Link>
         <Link className="inline-link" to="/status">Status</Link>
         <Link className="inline-link" to="/privacy">Data handling</Link>
-        <a className="inline-link" href="https://github.com/vippawar1104/meeting-summarizer" target="_blank" rel="noopener noreferrer">
+        <a className="inline-link" href="https://github.com/vipawar1104/reviewly" target="_blank" rel="noopener noreferrer">
           Source <Icon name="external-link" size={11} />
         </a>
       </footer>

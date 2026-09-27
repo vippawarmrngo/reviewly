@@ -1,23 +1,22 @@
 # Load test
 
-Every number below was measured by the scripts in [loadtest/](../loadtest/); each run writes its raw JSON to
-`loadtest/results/` locally (generated output, not tracked in the repository — rerun the scripts to reproduce it).
-Nothing here was run on Fly.io or against real GitHub or a real LLM.
+A record of load and failure tests run during development. The load-test scripts, the fake GitHub and the fake
+LLM server used for them are development tooling kept outside this repository. Nothing here was run on the live
+deployment or against real GitHub or a real LLM.
 
 ## Setup and honest limits
-- One 8-core Mac laptop ran everything: Postgres, Redis, the API, the worker, the fake GitHub
-  (`scripts/mock_github.py`), the fake LLM (`loadtest/stub_llm.py`) and the load generators. They compete for
+- One 8-core Mac laptop ran everything: Postgres, Redis, the API, the worker, the fake GitHub,
+  the fake LLM and the load generators. They compete for
   the same cores, so absolute numbers are conservative and **will differ on real infrastructure**.
 - The LLM is a stub that answers in 1.0 s ±0.2 s with an empty findings list. Real models take 5-30 s, so
   reviews/min here says how well Reviewly keeps its slots busy, not how many real reviews you will get.
-  Cache, free-tier limit and token budget are turned off (`docker-compose.load.yml`), otherwise identical
+  Cache, free-tier limit and token budget are turned off, otherwise identical
   diffs would skip the model and flatter the numbers.
 - 500 PRs are spread over 25 installations. `per_installation_cap` is 2.
 - Every run checks that every finished job produced a review (`valid: true`); one earlier run failed this
   check (worker started without GitHub credentials) and was discarded.
 - Each configuration was run once. Treat differences under ~10% as noise.
 
-Reproduce: see [loadtest/README.md](../loadtest/README.md).
 
 ## Webhook path (Locust, 20 s per row, 4 Locust processes)
 Every request is a new delivery: signature check, dedupe, Postgres insert, Redis enqueue.
@@ -46,7 +45,7 @@ so processes x 10 must stay below the database's connection limit.
 My first burst driver (a single Python/httpx process) reported p99 of several seconds at 100 senders. That
 was the generator's own scheduling delay, not the server; use Locust for webhook latency.
 
-## Drain rate vs worker slots (500 PRs burst, `loadtest.burst`)
+## Drain rate vs worker slots (500 PRs burst)
 | Worker slots | Drain time | Reviews/min |
 |---|---|---|
 | 4 | 133 s | 226 |
