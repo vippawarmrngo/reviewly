@@ -1,4 +1,4 @@
-.PHONY: up down test lint seed e2e-mock e2e dashboard-dev dashboard-test dashboard-build eval eval-baselines eval-report eval-validate eval-gate
+.PHONY: up down test lint e2e-mock e2e dashboard-dev dashboard-test dashboard-build eval eval-baselines eval-report eval-validate eval-gate
 up:
 	docker compose up --build -d
 down:
@@ -21,8 +21,6 @@ eval-report:
 eval-gate:
 	uv run python -m eval.gate --model baseline:regex --prompt v1
 
-seed:  # local demo data for the dashboard (dev only)
-	REVIEWLY_ENV=dev uv run python -m scripts.seed_demo
 dashboard-dev:
 	cd dashboard && npm run dev
 dashboard-test:

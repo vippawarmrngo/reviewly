@@ -137,8 +137,7 @@ failed after retries and its row covers only the cases that scored).
 **Run it locally with demo data**
 ```
 make up                     # postgres, redis, migrations, api (serves the dashboard), worker
-make seed                   # fake installation 42 with reviews, findings and feedback (dev only)
-open "http://localhost:8000/auth/dev-login?installation=42"
+open "http://localhost:8000/auth/dev-login?installation=42"   # an empty dashboard: no fake data is seeded
 ```
 `dev-login` exists only when `REVIEWLY_ENV=dev` and `REVIEWLY_DASHBOARD_DEV_LOGIN=true`; the app refuses to start outside dev
 with placeholder secrets or with dev login on. Frontend work: `make dashboard-dev` (Vite, proxies to :8000) and `make dashboard-test`.
