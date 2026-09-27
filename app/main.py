@@ -22,6 +22,8 @@ from app.core.security_headers import cache_headers, security_headers
 from app.core.site import SiteFiles, robots_txt, sitemap_xml
 from app.core.tracing import configure_tracing
 from app.db.session import make_engine, make_sessionmaker
+from app.embedded_worker import EmbeddedWorker
+from app.embedded_worker import start as start_embedded_worker
 from app.queue.redis_queue import RedisJobQueue
 
 
@@ -52,7 +54,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             app.state.sessionmaker = make_sessionmaker(app.state.engine)
         if not hasattr(app.state, "queue"):
             app.state.queue = RedisJobQueue(app.state.redis, prefix=settings.queue_prefix)
+        embedded: EmbeddedWorker | None = None
+        if settings.embedded_worker:
+            embedded = await start_embedded_worker(
+                settings, app.state.sessionmaker, app.state.redis, app.state.http, app.state.queue
+            )
         yield
+        if embedded is not None:
+            await embedded.shutdown(settings.shutdown_grace_s)
         await app.state.redis.aclose()
         await app.state.http.aclose()
         if hasattr(app.state, "pinned_http"):
