@@ -1,6 +1,8 @@
 """Response headers for the dashboard and API. The dashboard is a same-origin React build, so the
 policy can be strict: only our own scripts, styles and connections, and no framing (clickjacking)."""
 
+from app.core.site import is_page, normalize
+
 CSP = "; ".join(
     [
         "default-src 'self'",
@@ -16,7 +18,7 @@ CSP = "; ".join(
 )
 
 # These pages load third-party assets or post to GitHub, so the strict policy would break them.
-CSP_EXEMPT_PREFIXES = ("/setup", "/docs", "/redoc", "/openapi.json")
+CSP_EXEMPT_PREFIXES = ("/setup", "/api/docs", "/api/openapi.json")
 
 
 def security_headers(path: str, *, production: bool) -> dict[str, str]:
@@ -40,6 +42,10 @@ def cache_headers(path: str) -> dict[str, str]:
         return {"Cache-Control": "public, max-age=31536000, immutable"}
     if path.startswith(("/api/", "/auth/")):
         return {"Cache-Control": "no-store"}
-    if path in ("/", "/index.html", "/theme-init.js", "/robots.txt"):
+    if path in ("/readyz", "/healthz"):
+        return {"Cache-Control": "no-store"}  # the status page must never show a cached answer
+    if path in ("/favicon.svg", "/apple-touch-icon.png", "/og.png"):
+        return {"Cache-Control": "public, max-age=86400"}
+    if path in ("/theme-init.js", "/robots.txt", "/sitemap.xml") or is_page(normalize(path)):
         return {"Cache-Control": "no-cache"}
     return {}

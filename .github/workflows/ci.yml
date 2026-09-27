@@ -17,6 +17,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - run: npm run size  # the JavaScript a first visit must download stays under budget
   test:
     runs-on: ubuntu-latest
     services:

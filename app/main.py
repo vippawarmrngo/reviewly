@@ -8,7 +8,6 @@ from pathlib import Path
 import httpx
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 from starlette.middleware.gzip import GZipMiddleware
 
 from app.api import auth, config, dashboard, health, llm_settings, setup, stripe_webhook, webhooks
@@ -20,6 +19,7 @@ from app.core.metrics import QUEUE_DEPTH, WEBHOOK_SECONDS, render
 from app.core.pinned_http import make_pinned_client
 from app.core.redis import make_redis
 from app.core.security_headers import cache_headers, security_headers
+from app.core.site import SiteFiles, robots_txt, sitemap_xml
 from app.core.tracing import configure_tracing
 from app.db.session import make_engine, make_sessionmaker
 from app.queue.redis_queue import RedisJobQueue
@@ -60,7 +60,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if hasattr(app.state, "engine"):
             await app.state.engine.dispose()
 
-    app = FastAPI(title="Reviewly", lifespan=lifespan)
+    # The API docs live under /api so that /docs can be a page of the site.
+    app = FastAPI(
+        title="Reviewly",
+        lifespan=lifespan,
+        docs_url="/api/docs",
+        redoc_url=None,
+        openapi_url="/api/openapi.json",
+    )
     app.state.settings = settings
     app.add_middleware(GZipMiddleware, minimum_size=1024)
 
@@ -114,10 +121,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(config.router)
     app.include_router(setup.router)
 
-    # The built dashboard (if present) is served from the same origin, last so API routes win.
+    @app.get("/robots.txt", include_in_schema=False)
+    async def robots() -> Response:
+        return Response(robots_txt(settings.public_url), media_type="text/plain")
+
+    @app.get("/sitemap.xml", include_in_schema=False)
+    async def sitemap() -> Response:
+        return Response(sitemap_xml(settings.public_url), media_type="application/xml")
+
+    # The built site (if present) is served from the same origin, last so API routes win.
     dist = Path(__file__).resolve().parent.parent / "dashboard" / "dist"
     if dist.is_dir():
-        app.mount("/", StaticFiles(directory=dist, html=True), name="dashboard")
+        app.mount("/", SiteFiles(directory=dist, public_url=settings.public_url), name="site")
     return app
 
 

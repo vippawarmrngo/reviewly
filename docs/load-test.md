@@ -1,8 +1,8 @@
 # Load test
 
-Every number below was measured by the scripts in [loadtest/](../loadtest/); raw results are in
-[loadtest/results/](../loadtest/results/). Nothing here was run on Fly.io or against real GitHub or a
-real LLM.
+Every number below was measured by the scripts in [loadtest/](../loadtest/); each run writes its raw JSON to
+`loadtest/results/` locally (generated output, not tracked in the repository — rerun the scripts to reproduce it).
+Nothing here was run on Fly.io or against real GitHub or a real LLM.
 
 ## Setup and honest limits
 - One 8-core Mac laptop ran everything: Postgres, Redis, the API, the worker, the fake GitHub

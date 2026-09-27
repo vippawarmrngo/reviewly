@@ -1,0 +1,8 @@
+[
+  { "id": "openai", "label": "OpenAI", "keyUrl": "https://platform.openai.com/api-keys" },
+  { "id": "anthropic", "label": "Anthropic (Claude)", "keyUrl": "https://console.anthropic.com/settings/keys" },
+  { "id": "gemini", "label": "Google Gemini", "keyUrl": "https://aistudio.google.com/apikey" },
+  { "id": "groq", "label": "Groq", "keyUrl": "https://console.groq.com/keys" },
+  { "id": "mistral", "label": "Mistral", "keyUrl": "https://console.mistral.ai/api-keys" },
+  { "id": "custom", "label": "OpenAI-compatible endpoint", "keyUrl": "" }
+]

@@ -90,8 +90,10 @@ verification, ranking) against a fake GitHub on 58 labeled diffs and scores what
   model's own findings that point at a line in the diff, measured *before* verification, so it shows hallucinated lines),
   latency p50/p95, tokens and cost per PR, with bootstrap 95% confidence intervals over cases.
 - **Reproducible offline:** every LLM reply is recorded in `eval/recordings/`. `--mode replay` re-scores from them with no
-  key and no network. Costs use the per-model price table in `app/llm/pricing.py`, which is not yet verified against
-  provider pricing, so treat cost columns as estimates.
+  key and no network. Recordings and results are regenerated output (`.gitignore`d, not shipped in the repository), so a
+  fresh clone reproduces them by running `make eval` with a real key first, not by replaying files that came with the clone.
+  Costs use the per-model price table in `app/llm/pricing.py`, which is not yet verified against provider pricing, so treat
+  cost columns as estimates.
 - **Baselines** prove the metrics behave: `baseline:null` (never comments) must score 0% recall, and `baseline:regex` is a
   naive anti-pattern matcher that any real model should beat.
 - **Prompts are versioned** in `app/prompts/vN/`. A prompt change is only kept if `make eval` shows it helps.
@@ -134,21 +136,36 @@ failed after retries and its row covers only the cases that scored).
 - Remaining false alarms are mostly confident speculation (0.93 to 0.95). The next improvement to try is a second verification pass that re-checks each finding against the visible diff.
 
 ## Dashboard, feedback and billing (M7)
-**Run it locally with demo data**
+**Run it locally**
 ```
 make up                     # postgres, redis, migrations, api (serves the dashboard), worker
-make seed                   # fake installation 42 with reviews, findings and feedback (dev only)
-open "http://localhost:8000/auth/dev-login?installation=42"
 ```
-`dev-login` exists only when `REVIEWLY_ENV=dev` and `REVIEWLY_DASHBOARD_DEV_LOGIN=true`; the app refuses to start outside dev
-with placeholder secrets or with dev login on. Frontend work: `make dashboard-dev` (Vite, proxies to :8000) and `make dashboard-test`.
+There is no local-only login: signing in always goes through `/auth/github/login`, the same as in production, so
+what you see locally is exactly what a real user sees. The dashboard for any installation shows real rows only —
+it is empty until a real GitHub App is installed on a real repository and a real pull request has been reviewed
+(see **Onboarding** below). Frontend work: `make dashboard-dev` (Vite, proxies to :8000) and `make dashboard-test`.
 
-**The public site** (`/`, served by the same app): a landing page (what it does, an example review clearly labeled as an example, how it works,
-features, security, pricing that shows the server's real free allowance, an FAQ that states the measured accuracy with its caveats), a
-*Data handling* page describing what the software does with data (behaviour, not a legal policy: an operator must supply their own terms),
-sign-in, and a shared header and footer. It makes no claims it cannot back (no customer logos, uptime numbers or compliance badges). Signed-in
-users go straight to the dashboard. The page asks `/api/session`, which answers 200 whether or not you are signed in, so anonymous visitors
-cause no console errors. Not done: an Open Graph preview image, a sitemap, and any translation.
+**The public site** (served by the same app, with real URLs): `/` a landing page, `/docs`, `/changelog`, `/status`, `/privacy` (data handling),
+`/signin`, and the signed-in app at `/app` and `/app/settings`. Old `/#/…` links are redirected. Each page gets its own title, description,
+canonical URL and social-preview tags from the server (using `REVIEWLY_PUBLIC_URL`, so **set it in production**), a sitemap, `robots.txt`, and a
+404 page that returns a real 404. What it contains:
+- **Landing:** an animated example review (clearly labeled "Example"; it plays only while on screen and shows its finished state under "reduce motion"),
+  a strip of measured results with their caveats and sources, how it works, features, security, pricing that reads the server's real free allowance
+  and whether billing is enabled, an accordion FAQ, a mobile menu, scroll-following section links and a scroll-progress bar.
+- **Docs:** quick start, how a review works, accept/dismiss words and reactions, `.reviewly.yml` reference, bring-your-own-key, and why a PR gets no review.
+  These facts come from `dashboard/src/content/*.json` and `reviewly.example.yml`, which backend tests compare with the real code (reply words, reactions,
+  strictness thresholds, config limits, skip reasons, providers), so the docs cannot silently drift.
+- **Changelog:** written from the commit history. **Status:** live `/readyz` (database, queue) with no invented uptime or history.
+- It makes no claims it cannot back (no customer logos, uptime numbers or compliance badges) and adds no analytics or trackers.
+- **Motion** uses framer-motion (loaded lazily) and every animation respects `prefers-reduced-motion`. **Brand assets** (`favicon.svg`, touch icon, social image)
+  are rendered by `dashboard/scripts/render_brand.mjs`.
+
+**Measured on this build** (headless Chromium against the local server, simulated throttling, so treat as indicative): Lighthouse on `/` scored
+performance 97–98 on mobile (largest paint about 2.2 s) and 100 on desktop, with accessibility, best practices and SEO at 100; the docs page scored 97–100 on
+performance and 100 on the rest. An automated audit (`dashboard/scripts/audit.mjs`: axe accessibility rules, console errors, horizontal overflow) over
+every page at 390, 768 and 1280 px in light and dark mode found no violations after the fixes it prompted. JavaScript needed for a first visit is about 90 KB
+gzip (CI fails above 120 KB: `npm run size`). Not part of CI: the browser audits need a running server and a browser. Not done: a prerendered snapshot
+(the site is client-rendered, so non-JavaScript crawlers only see the meta tags), translations.
 
 **The dashboard** has two views, grey and white (dark mode follows the system until you press the toggle). *Overview*: summary tiles,
 precision by rule, reviews per month (with a table view), repositories, and recent reviews (each linking to its PR; the page refreshes

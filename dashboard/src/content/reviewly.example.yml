@@ -1,0 +1,9 @@
+# .reviewly.yml — put this in the root of your repository.
+ignore:            # files Reviewly should not review (globs)
+  - "dist/**"
+  - "**/*.lock"
+strictness: medium # low: only very sure, high: also less certain (more comments)
+max_comments: 10   # most comments in one review (1-100)
+rules:             # your own rules, in plain language (up to 20)
+  - "Public functions need type hints."
+  - "Never log request bodies."

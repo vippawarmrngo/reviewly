@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { compact, int, monthLabel, usd } from "../format";
 import type { UsageRow } from "../types";
+import { EmptyState } from "./EmptyState";
+import { ScrollBox } from "./ScrollBox";
 import { Icon } from "./Icon";
 import { Tooltip, useTooltip } from "./Tooltip";
 
@@ -15,7 +17,7 @@ export function barHeight(value: number, max: number): number {
 export function UsageChart({ rows }: { rows: UsageRow[] }) {
   const [asTable, setAsTable] = useState(false);
   const { tip, show, hide } = useTooltip();
-  if (rows.length === 0) return <div className="empty">No usage yet.</div>;
+  if (rows.length === 0) return <EmptyState title="No usage yet." hint="Monthly review counts show up after the first review." />;
   const max = Math.max(1, ...rows.map((r) => r.reviews));
 
   return (
@@ -27,7 +29,7 @@ export function UsageChart({ rows }: { rows: UsageRow[] }) {
         </button>
       </div>
       {asTable ? (
-        <div className="table-wrap card">
+        <ScrollBox label="Monthly usage table">
           <table>
             <thead>
               <tr>
@@ -50,9 +52,9 @@ export function UsageChart({ rows }: { rows: UsageRow[] }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollBox>
       ) : (
-        <div className="chart card" role="img" aria-label={`Reviews per month, ${rows.map((r) => `${monthLabel(r.period)}: ${r.reviews}`).join(", ")}`}>
+        <div className="chart card" role="group" aria-label={`Reviews per month, ${rows.map((r) => `${monthLabel(r.period)}: ${r.reviews}`).join(", ")}`}>
           {rows.map((r) => {
             const label = `${monthLabel(r.period)}: ${int(r.reviews)} reviews, ${int(r.findings)} findings, ${compact(r.tokens)} tokens`;
             return (

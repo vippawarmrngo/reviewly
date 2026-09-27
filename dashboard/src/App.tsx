@@ -1,27 +1,42 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { Unauthorized, fetchConfig, fetchLLM, fetchMe, fetchOverview } from "./api";
-import { GettingStarted } from "./components/GettingStarted";
 import { Header } from "./components/Header";
 import { Icon } from "./components/Icon";
 import { Login } from "./components/Login";
+import { Link } from "./components/Link";
+import { ToastProvider, useToast } from "./components/Toast";
 import { Landing } from "./components/site/Landing";
-import { Privacy } from "./components/site/Privacy";
+import { NotFound } from "./components/site/NotFound";
 import { SiteFooter } from "./components/site/SiteFooter";
 import { SiteHeader } from "./components/site/SiteHeader";
-import { ModelSettings } from "./components/ModelSettings";
-import { PlanCard } from "./components/PlanCard";
-import { RuleBars } from "./components/RuleBars";
-import { SectionTitle } from "./components/SectionTitle";
 import { Skeleton } from "./components/Skeleton";
-import { RecentTable, RepoTable, statusOf } from "./components/Tables";
-import { Tile } from "./components/Tile";
-import { UsageChart } from "./components/UsageChart";
-import { compact, int, pct, relativeTime, usd } from "./format";
-import { type Route, useRoute } from "./route";
+import { statusOf } from "./components/Tables";
+
+import { PageTransition } from "./motion/PageTransition";
+import { type Route, navigate, pathOf, useRoute } from "./route";
 import { useTheme } from "./theme";
 import type { Me, Overview, PublicConfig } from "./types";
 
 type Session = { kind: "loading" } | { kind: "login" } | { kind: "error"; message: string } | { kind: "ready"; me: Me };
+
+// Information pages load on demand, so the landing page does not carry them.
+const Privacy = lazy(() => import("./components/site/Privacy").then((m) => ({ default: m.Privacy })));
+const Docs = lazy(() => import("./components/site/Docs"));
+const Changelog = lazy(() => import("./components/site/Changelog"));
+const Status = lazy(() => import("./components/site/Status"));
+const Dashboard = lazy(() => import("./views/Dashboard"));
+
+const INFO_PAGES: Partial<Record<Route, React.ReactNode>> = {
+  privacy: <Privacy />,
+  docs: <Docs />,
+  changelog: <Changelog />,
+  status: <Status />,
+};
+const Loading = () => (
+  <div className="center" role="status" aria-live="polite">
+    <p>Loading…</p>
+  </div>
+);
 
 const AUTO_REFRESH_MS = 20_000;
 const SUBTITLES = {
@@ -30,13 +45,17 @@ const SUBTITLES = {
 } as const;
 const TITLES: Record<Route, string> = {
   home: "Reviewly · AI code review for GitHub pull requests",
+  docs: "Docs · Reviewly",
+  changelog: "Changelog · Reviewly",
+  status: "Status · Reviewly",
   privacy: "Data handling · Reviewly",
   signin: "Sign in · Reviewly",
   overview: "Overview · Reviewly",
   settings: "Settings · Reviewly",
+  notfound: "Page not found · Reviewly",
 };
 
-export default function App() {
+function AppInner() {
   const [theme, toggleTheme] = useTheme();
   const [route] = useRoute();
   const [session, setSession] = useState<Session>({ kind: "loading" });
@@ -63,6 +82,12 @@ export default function App() {
     document.title = session.kind === "loading" ? "Reviewly" : TITLES[view];
   }, [view, session.kind]);
 
+  // Keep the address bar honest when the view differs from the URL (signed-in "/" -> "/app", signed-out "/app" -> "/signin").
+  useEffect(() => {
+    if (session.kind === "loading" || session.kind === "error") return;
+    if (view !== route && view !== "notfound") navigate(pathOf(view), { replace: true, silent: true });
+  }, [view, route, session.kind]);
+
   useEffect(() => {
     fetchConfig()
       .then(setConfig)
@@ -75,19 +100,29 @@ export default function App() {
       .catch((e) => setSession(e instanceof Unauthorized ? { kind: "login" } : { kind: "error", message: String(e.message ?? e) }));
   }, []);
 
-  const load = useCallback(async (id: number) => {
+  const load = useCallback(async (id: number): Promise<boolean> => {
     setError(null);
     setRefreshing(true);
     try {
       setOverview(await fetchOverview(id));
       setUpdatedAt(new Date());
+      return true;
     } catch (e) {
       if (e instanceof Unauthorized) setSession({ kind: "login" });
       else setError(e instanceof Error ? e.message : "Something went wrong.");
+      return false;
     } finally {
       setRefreshing(false);
     }
   }, []);
+
+  const toast = useToast();
+  /** The Refresh button: reload, then say how it went without moving the page. */
+  const refresh = useCallback(async () => {
+    if (installation === null) return;
+    const ok = await load(installation);
+    toast(ok ? "Dashboard updated" : "Could not refresh. Try again.", ok ? "ok" : "error");
+  }, [installation, load, toast]);
 
   useEffect(() => {
     if (installation === null) return;
@@ -108,6 +143,7 @@ export default function App() {
       return;
     }
     mainRef.current?.focus();
+    window.scrollTo?.(0, 0);
   }, [route]); // the user's navigation, not the session settling (which also changes `view`)
 
   // While a review is still running, keep the table current without the user pressing Refresh.
@@ -140,10 +176,16 @@ export default function App() {
         showNav={hasInstallation}
       />
       <main id="main" tabIndex={-1} ref={mainRef}>
-        {body}
+        <PageTransition pageKey={view}>
+          <Suspense fallback={<Loading />}>{body}</Suspense>
+        </PageTransition>
       </main>
       <footer className="footer">
         <span>Reviewly</span>
+        <Link className="inline-link" to="/docs">Docs</Link>
+        <Link className="inline-link" to="/changelog">Changelog</Link>
+        <Link className="inline-link" to="/status">Status</Link>
+        <Link className="inline-link" to="/privacy">Data handling</Link>
         <a className="inline-link" href="https://github.com/vippawar1104/meeting-summarizer" target="_blank" rel="noopener noreferrer">
           Source <Icon name="external-link" size={11} />
         </a>
@@ -158,7 +200,9 @@ export default function App() {
       </a>
       <SiteHeader theme={theme} onToggleTheme={toggleTheme} installUrl={installUrl} />
       <main id="main" tabIndex={-1} ref={mainRef}>
-        {body}
+        <PageTransition pageKey={view}>
+          <Suspense fallback={<Loading />}>{body}</Suspense>
+        </PageTransition>
       </main>
       <SiteFooter installUrl={installUrl} />
     </div>
@@ -176,9 +220,12 @@ export default function App() {
     );
   }
   if (session.kind === "login") {
-    return publicShell(view === "privacy" ? <Privacy /> : view === "signin" ? <Login config={config} /> : <Landing config={config} installUrl={installUrl} />);
+    const page =
+      INFO_PAGES[view] ?? (view === "signin" ? <Login config={config} /> : view === "notfound" ? <NotFound signedIn={false} /> : <Landing config={config} installUrl={installUrl} />);
+    return publicShell(page);
   }
-  if (view === "privacy") return appShell(<Privacy />);
+  if (INFO_PAGES[view]) return appShell(INFO_PAGES[view]);
+  if (view === "notfound") return appShell(<NotFound signedIn />);
   if (installation === null) {
     return appShell(
       <div className="center">
@@ -194,7 +241,6 @@ export default function App() {
     );
   }
 
-  const t = overview?.totals;
   const appView = view === "settings" ? "settings" : "overview";
   return appShell(
     <>
@@ -208,79 +254,27 @@ export default function App() {
       )}
       {!overview && !error && <Skeleton />}
 
-      {overview && t && (
-        <>
-          <div className="toolbar">
-            <div>
-              <h1 className="page-title">{appView === "settings" ? "Settings" : "Overview"}</h1>
-              <p className="subtitle">{SUBTITLES[appView](signedIn ? session.me.names?.[String(installation)] : undefined)}</p>
-            </div>
-            <span className="row">
-              <span className="muted" aria-live="polite">
-                {updatedAt ? `Updated ${relativeTime(updatedAt.toISOString()) || "just now"}` : ""}
-              </span>
-              <button className="btn" onClick={() => void load(installation)} disabled={refreshing} aria-label="Refresh data">
-                <Icon name="refresh" size={14} />
-                <span className="hide-narrow">{refreshing ? "Refreshing…" : "Refresh"}</span>
-              </button>
-            </span>
-          </div>
-
-          {appView === "overview" ? (
-            <>
-              {t.reviews === 0 && <GettingStarted hasReviews={false} usesOwnKey={ownKey} installUrl={installUrl} />}
-
-              <section aria-label="Summary">
-                <SectionTitle icon="grid">Summary</SectionTitle>
-                <div className="tiles">
-                  <Tile icon="check-circle" label="Reviews" value={int(t.reviews)} />
-                  <Tile icon="git-pull-request" label="Pull requests" value={int(t.prs)} />
-                  <Tile icon="message-square" label="Findings posted" value={int(t.findings)} />
-                  <Tile icon="target" label="Precision" value={pct(t.precision)} hint={t.precision === null ? "No feedback yet" : "Accepted of judged"} />
-                  <Tile icon="thumbs-up" label="Accepted" value={int(t.accepted)} tone="good" />
-                  <Tile icon="thumbs-down" label="Dismissed" value={int(t.dismissed)} tone="bad" />
-                  <Tile icon="cpu" label="Tokens" value={compact(t.tokens)} tone="neutral" />
-                  <Tile icon="coins" label="Cost" value={usd(t.cost_usd)} hint={t.cost_usd ? undefined : "No verified price yet"} tone="neutral" />
-                </div>
-              </section>
-
-              <section aria-label="Precision by rule">
-                <SectionTitle icon="target">Precision by rule</SectionTitle>
-                <p className="sub">Of the findings people judged, the share they accepted.</p>
-                <RuleBars rules={overview.rules} />
-              </section>
-
-              <section aria-label="Monthly usage">
-                <SectionTitle icon="calendar">Reviews per month</SectionTitle>
-                <UsageChart rows={overview.usage} />
-              </section>
-
-              <section aria-label="Repositories">
-                <SectionTitle icon="folder">Repositories</SectionTitle>
-                <RepoTable repos={overview.repos} />
-              </section>
-
-              <section aria-label="Recent reviews">
-                <SectionTitle icon="clock">Recent reviews</SectionTitle>
-                <RecentTable recent={overview.recent} />
-              </section>
-            </>
-          ) : (
-            <>
-              <section aria-label="Plan">
-                <SectionTitle icon="credit-card">Plan and usage</SectionTitle>
-                <PlanCard plan={overview.plan} period={overview.period} installation={overview.installation_id} />
-              </section>
-
-              <section aria-label="AI model">
-                <SectionTitle icon="cpu">AI model</SectionTitle>
-                <p className="sub">Reviews use Reviewly's models unless you add your own key.</p>
-                <ModelSettings installation={overview.installation_id} onChange={setOwnKey} />
-              </section>
-            </>
-          )}
-        </>
+      {overview && (
+        <Dashboard
+          overview={overview}
+          view={appView}
+          subtitle={SUBTITLES[appView](signedIn ? session.me.names?.[String(installation)] : undefined)}
+          updatedAt={updatedAt}
+          refreshing={refreshing}
+          onRefresh={() => void refresh()}
+          ownKey={ownKey}
+          onOwnKeyChange={setOwnKey}
+          installUrl={installUrl}
+        />
       )}
     </>,
+  );
+}
+
+export default function App() {
+  return (
+    <ToastProvider>
+      <AppInner />
+    </ToastProvider>
   );
 }

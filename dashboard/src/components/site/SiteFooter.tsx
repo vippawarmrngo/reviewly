@@ -1,4 +1,6 @@
 import { goToSection } from "../../route";
+import { LogoMark } from "../brand/Logo";
+import { Link } from "../Link";
 import { Icon } from "../Icon";
 
 const SOURCE = "https://github.com/vippawar1104/meeting-summarizer";
@@ -14,24 +16,25 @@ export function SiteFooter({ installUrl }: { installUrl: string | null }) {
       <div className="site-footer-grid">
         <div>
           <span className="brand">
-            <span className="mark">
-              <Icon name="check" size={14} />
-            </span>
+            <LogoMark size={26} />
             Reviewly
           </span>
           <p className="muted">AI code review for GitHub pull requests.</p>
         </div>
         <div>
           <h3>Product</h3>
-          <a href="#/" onClick={jump("how")}>How it works</a>
-          <a href="#/" onClick={jump("features")}>Features</a>
-          <a href="#/" onClick={jump("pricing")}>Pricing</a>
-          <a href="#/" onClick={jump("faq")}>FAQ</a>
+          <Link to="/" onClick={jump("how")}>How it works</Link>
+          <Link to="/" onClick={jump("features")}>Features</Link>
+          <Link to="/" onClick={jump("pricing")}>Pricing</Link>
+          <Link to="/" onClick={jump("faq")}>FAQ</Link>
+          <Link to="/docs">Docs</Link>
+          <Link to="/changelog">Changelog</Link>
         </div>
         <div>
           <h3>Trust</h3>
-          <a href="#/" onClick={jump("security")}>Security</a>
-          <a href="#/privacy">Data handling</a>
+          <Link to="/" onClick={jump("security")}>Security</Link>
+          <Link to="/status">Status</Link>
+          <Link to="/privacy">Data handling</Link>
           <a href={SOURCE} target="_blank" rel="noopener noreferrer">
             Source code <Icon name="external-link" size={11} />
           </a>
@@ -39,11 +42,14 @@ export function SiteFooter({ installUrl }: { installUrl: string | null }) {
         <div>
           <h3>Get started</h3>
           {installUrl && <a href={installUrl}>Install on GitHub</a>}
-          <a href="#/signin">Sign in</a>
+          <Link to="/signin">Sign in</Link>
         </div>
       </div>
       <div className="site-footer-base">
         <span>© {year} Reviewly. Released under the MIT license.</span>
+        <button type="button" className="link" onClick={() => window.scrollTo?.({ top: 0, behavior: "smooth" })}>
+          Back to top
+        </button>
       </div>
     </footer>
   );
