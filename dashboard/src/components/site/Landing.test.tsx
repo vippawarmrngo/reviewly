@@ -8,7 +8,7 @@ import type { PublicConfig } from "../../types";
 
 const INSTALL = "https://github.com/apps/reviewly/installations/new";
 const cfg = (over: Partial<PublicConfig> = {}): PublicConfig => ({
-  app_install_url: INSTALL, github_login: true, dev_login: false, free_reviews_per_month: 20, billing: false, ...over,
+  app_install_url: INSTALL, github_login: true, free_reviews_per_month: 20, billing: false, ...over,
 });
 
 describe("Landing", () => {

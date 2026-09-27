@@ -93,7 +93,6 @@ class Settings(BaseSettings):
 
     # Dashboard
     dashboard_secret: str = "dev-dashboard-secret-change-me"  # signs session cookies
-    dashboard_dev_login: bool = False  # local-only login without a GitHub OAuth app
     github_oauth_client_id: str | None = None
     github_oauth_client_secret: str | None = None
 
@@ -130,8 +129,6 @@ def insecure_settings(settings: Settings) -> list[str]:
         problems.append(
             "REVIEWLY_ENCRYPTION_KEY is required (generate one: python -m app.core.crypto)"
         )
-    if settings.dashboard_dev_login:
-        problems.append("REVIEWLY_DASHBOARD_DEV_LOGIN must not be enabled outside dev")
     return problems
 
 

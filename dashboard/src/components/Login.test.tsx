@@ -1,9 +1,8 @@
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { Login } from "./Login";
 
-const cfg = (over: Partial<{ github_login: boolean; dev_login: boolean }> = {}) => ({
-  app_install_url: null, github_login: true, dev_login: false, ...over,
+const cfg = (over: Partial<{ github_login: boolean }> = {}) => ({
+  app_install_url: null, github_login: true, ...over,
 });
 
 describe("Login", () => {
@@ -24,31 +23,10 @@ describe("Login", () => {
     expect(screen.getByRole("link", { name: /sign in with github/i })).toBeInTheDocument();
   });
 
-  it("shows no developer login on a normal server", () => {
+  it("offers no way to sign in other than GitHub", () => {
     render(<Login config={cfg()} />);
-    expect(screen.queryByRole("button", { name: /continue as developer/i })).not.toBeInTheDocument();
-  });
-
-  it("offers a developer login in local development, defaulting to the demo installation", async () => {
-    const assign = vi.fn();
-    vi.stubGlobal("location", { ...window.location, assign });
-    render(<Login config={cfg({ github_login: false, dev_login: true })} />);
-    expect(screen.getByLabelText("Installation id")).toHaveValue("42");
-    await userEvent.click(screen.getByRole("button", { name: /continue as developer/i }));
-    expect(assign).toHaveBeenCalledWith("/auth/dev-login?installation=42");
-    vi.unstubAllGlobals();
-  });
-
-  it("uses whatever installation id was typed, safely encoded", async () => {
-    const assign = vi.fn();
-    vi.stubGlobal("location", { ...window.location, assign });
-    render(<Login config={cfg({ dev_login: true })} />);
-    const input = screen.getByLabelText("Installation id");
-    await userEvent.clear(input);
-    await userEvent.type(input, "4242");
-    await userEvent.click(screen.getByRole("button", { name: /continue as developer/i }));
-    expect(assign).toHaveBeenCalledWith("/auth/dev-login?installation=4242");
-    vi.unstubAllGlobals();
+    expect(screen.queryByRole("button", { name: /developer/i })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link")).toHaveLength(1);
   });
 });
 

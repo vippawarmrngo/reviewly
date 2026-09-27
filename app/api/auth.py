@@ -111,18 +111,6 @@ async def github_callback(request: Request, code: str = "", state: str = "") -> 
     return response
 
 
-@router.get("/auth/dev-login")
-async def dev_login(request: Request, installation: int) -> Response:
-    """Local development only: pretend to be a user of one installation. Off unless both the
-    environment is `dev` and REVIEWLY_DASHBOARD_DEV_LOGIN is set, so it cannot exist in production."""
-    s = settings_of(request)
-    if not (s.dashboard_dev_login and s.env == "dev"):
-        raise HTTPException(status_code=404, detail="not found")
-    response = RedirectResponse("/")
-    _set_session(response, s, "dev", [installation])
-    return response
-
-
 @router.get("/auth/logout")
 async def logout() -> Response:
     response = RedirectResponse("/")

@@ -90,8 +90,10 @@ verification, ranking) against a fake GitHub on 58 labeled diffs and scores what
   model's own findings that point at a line in the diff, measured *before* verification, so it shows hallucinated lines),
   latency p50/p95, tokens and cost per PR, with bootstrap 95% confidence intervals over cases.
 - **Reproducible offline:** every LLM reply is recorded in `eval/recordings/`. `--mode replay` re-scores from them with no
-  key and no network. Costs use the per-model price table in `app/llm/pricing.py`, which is not yet verified against
-  provider pricing, so treat cost columns as estimates.
+  key and no network. Recordings and results are regenerated output (`.gitignore`d, not shipped in the repository), so a
+  fresh clone reproduces them by running `make eval` with a real key first, not by replaying files that came with the clone.
+  Costs use the per-model price table in `app/llm/pricing.py`, which is not yet verified against provider pricing, so treat
+  cost columns as estimates.
 - **Baselines** prove the metrics behave: `baseline:null` (never comments) must score 0% recall, and `baseline:regex` is a
   naive anti-pattern matcher that any real model should beat.
 - **Prompts are versioned** in `app/prompts/vN/`. A prompt change is only kept if `make eval` shows it helps.
@@ -134,13 +136,14 @@ failed after retries and its row covers only the cases that scored).
 - Remaining false alarms are mostly confident speculation (0.93 to 0.95). The next improvement to try is a second verification pass that re-checks each finding against the visible diff.
 
 ## Dashboard, feedback and billing (M7)
-**Run it locally with demo data**
+**Run it locally**
 ```
 make up                     # postgres, redis, migrations, api (serves the dashboard), worker
-open "http://localhost:8000/auth/dev-login?installation=42"   # an empty dashboard: no fake data is seeded
 ```
-`dev-login` exists only when `REVIEWLY_ENV=dev` and `REVIEWLY_DASHBOARD_DEV_LOGIN=true`; the app refuses to start outside dev
-with placeholder secrets or with dev login on. Frontend work: `make dashboard-dev` (Vite, proxies to :8000) and `make dashboard-test`.
+There is no local-only login: signing in always goes through `/auth/github/login`, the same as in production, so
+what you see locally is exactly what a real user sees. The dashboard for any installation shows real rows only —
+it is empty until a real GitHub App is installed on a real repository and a real pull request has been reviewed
+(see **Onboarding** below). Frontend work: `make dashboard-dev` (Vite, proxies to :8000) and `make dashboard-test`.
 
 **The public site** (served by the same app, with real URLs): `/` a landing page, `/docs`, `/changelog`, `/status`, `/privacy` (data handling),
 `/signin`, and the signed-in app at `/app` and `/app/settings`. Old `/#/…` links are redirected. Each page gets its own title, description,
