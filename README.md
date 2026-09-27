@@ -32,13 +32,20 @@ make up        # docker compose: postgres+pgvector, redis, migrate, api, worker
 - [x] M5 secret redaction, injection hardening, per-installation token budget and rate limit, review cache, partial-review handling
 - [x] M6 evaluation harness: 58 labeled cases, metrics with confidence intervals, record/replay, CI gate. Gemini numbers pending (needs an API key)
 - [x] M7 dashboard (React + TypeScript, black on white with dark mode), feedback loop, usage metering, free tier, Stripe test-mode checkout
-- [x] M8 observability (Prometheus, OpenTelemetry), load and failure tests with measured results, Fly.io config and runbook (not yet deployed)
+- [x] M8 observability (Prometheus, OpenTelemetry), load and failure tests with measured results, Fly.io config and runbook, **deployed live on Render** (see below)
 
 ## Performance (measured on one laptop, stub LLM; details and limits in [docs/load-test.md](docs/load-test.md))
 - Webhook endpoint: p99 64 ms at 10 concurrent senders on one process; about 440 requests/s per process; 4 processes about 990/s (p99 83 ms at 25 senders).
 - 500 PRs drained with no lost jobs and no duplicate reviews at 4, 8, 16 and 32 worker slots: 226, 446, 881 and 1576 reviews/min with a 1 s model (real models are slower).
 - Survived, with every PR reviewed exactly once: primary model down, all models down for 45 s, Redis restart, Redis wiped, worker `kill -9`.
-- Real-model quality numbers are in the Evaluation section. Nothing was run against real GitHub or on Fly.io.
+- Real-model quality numbers are in the Evaluation section. These load numbers were not run on the live deployment (see below), only locally.
+
+## Deployment
+**Live on Render** (free tier): [reviewly-api.onrender.com](https://reviewly-api.onrender.com) — see [docs/runbook.md](docs/runbook.md#first-deploy-render-free-tier)
+for the exact steps and every honest limit of the free tier (cold starts after 15 min idle, the database's 30-day free expiry, manual migrations). Verified live: `/healthz`
+and `/readyz` both return healthy against the real deployed Postgres and Redis, and a real signed webhook was sent to the live `/webhooks/github` and traced through to
+`job_done` in the logs. **Not yet done on this deployment:** no GitHub App has been registered against it yet (`/setup` is reachable and ready), so no real GitHub
+webhook, OAuth sign-in or actual pull request review has happened there. Fly.io configs (`fly.web.toml`, `fly.worker.toml`) also exist but were not the platform used.
 
 ## Using Reviewly
 **As a user (no setup):** install the GitHub App on your repositories, then open a pull request. Reviewly reads the diff and posts one

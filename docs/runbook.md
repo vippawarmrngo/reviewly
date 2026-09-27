@@ -5,7 +5,54 @@ port `REVIEWLY_WORKER_METRICS_PORT` (9100). Logs are JSON with a `correlation_id
 webhook to job to worker: `grep <id>` across both services shows one PR's whole path. Tracing is off until
 `REVIEWLY_OTLP_ENDPOINT` is set (spans carry the same `correlation_id` attribute; they are not linked by W3C
 trace context). Fly.io deployment files exist (`fly.web.toml`, `fly.worker.toml`) but have **not** been
-deployed by the author.
+deployed by the author. **Render has been deployed** (see below) and is the currently live instance.
+
+## First deploy (Render, free tier)
+Deployed once via Render's API, not the dashboard; these are the equivalent manual steps.
+
+1. **Database and cache**, both free plan: a Postgres instance (`version: 16`) and a Key Value (Redis)
+   instance, same region. Free Postgres **expires 30 days after creation** and is then deleted — upgrade
+   it or export the data before then. Free Key Value has `persistenceMode: off`: a restart loses queued
+   jobs' in-flight state, which is why Postgres (not Redis) is the system's source of truth — the
+   reconciler re-enqueues anything Redis lost.
+2. **Web service**: Docker runtime from this repo, branch `reviewly-main`, health check path `/healthz`.
+   Render's free plan allows only one service type per project (**no background workers on free**), so:
+   - Set `REVIEWLY_EMBEDDED_WORKER=true` — the API process also drains the queue (`app/embedded_worker.py`).
+     This is an opt-in single-process mode; the tested default everywhere else is two processes.
+   - Env vars: `REVIEWLY_ENV=prod`, `REVIEWLY_DATABASE_URL` / `REVIEWLY_REDIS_URL` (the **internal**
+     connection strings — Postgres needs `+psycopg` added to the scheme: `postgresql+psycopg://...`),
+     `REVIEWLY_GITHUB_WEBHOOK_SECRET`, `REVIEWLY_DASHBOARD_SECRET` (both `openssl rand -hex 32`),
+     `REVIEWLY_ENCRYPTION_KEY` (`python -m app.core.crypto`), `REVIEWLY_SETUP_TOKEN` (`openssl rand -hex
+     24`), `REVIEWLY_PUBLIC_URL` (the service's own `https://<name>.onrender.com` URL, set *after* the
+     service exists so the URL is known).
+3. **Migrations are not automatic on the free plan** — `preDeployCommand` (Render's usual mechanism for
+   this) is accepted by the API but does not take effect on `starter`/free build plans, confirmed by
+   checking the service after setting it. Run them by hand after every schema change, from anywhere, using
+   the database's **external** connection string (Postgres dashboard → Connect → temporarily add your IP
+   under Access Control, since the external endpoint has an IP allow list; empty list = nobody, not
+   everyone):
+   ```
+   REVIEWLY_DATABASE_URL=postgresql+psycopg://<external-connection-string> uv run alembic upgrade head
+   ```
+   Remove the temporary IP allow-list entry afterward — the deployed app itself uses the internal
+   connection string and never needs it.
+4. Open `https://<service>.onrender.com/setup?token=<REVIEWLY_SETUP_TOKEN>`, press the button, and put the
+   printed credentials (app id, private key, webhook secret, OAuth client id/secret, slug) into the
+   service's env vars. Then remove `REVIEWLY_SETUP_TOKEN` and redeploy.
+5. Check `/readyz` returns `{"db":"ok","redis":"ok"}`, and that a signed test webhook to
+   `/webhooks/github` returns `{"status": "enqueued"}` and shows up in the logs as `job_enqueued` then
+   `job_done` (or `review_stub_no_credentials` before step 4 is done).
+
+**Known limits of this free deployment, honestly stated:**
+- The free web service **spins down after 15 minutes idle** and cold-starts on the next request, which can
+  take well over the several seconds a webhook delivery usually allows before GitHub treats it as failed
+  (GitHub does retry, so a delayed review is more likely than a lost one, but the first PR after any idle
+  period will be slow). A paid plan (`starter`, ~$7/month) removes this.
+- Free Postgres is deleted after 30 days unless upgraded.
+- No autoscaling is configured; `numInstances: 1` is what free enforces anyway, which is also what makes
+  the embedded-worker mode safe here (see `app/core/config.py`'s note on `embedded_worker`).
+
+## First deploy (Fly.io, not yet used)
 
 ## First deploy (Fly.io)
 ```
