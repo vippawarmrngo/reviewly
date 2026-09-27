@@ -3,7 +3,7 @@ import { LogoMark } from "../brand/Logo";
 import { Link } from "../Link";
 import { Icon } from "../Icon";
 
-const SOURCE = "https://github.com/vippawar1104/meeting-summarizer";
+const SOURCE = "https://github.com/vipawar1104/reviewly";
 
 export function SiteFooter({ installUrl }: { installUrl: string | null }) {
   const year = new Date().getFullYear();
