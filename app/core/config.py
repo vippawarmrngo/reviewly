@@ -109,6 +109,12 @@ class Settings(BaseSettings):
     otlp_endpoint: str | None = None  # e.g. http://collector:4318/v1/traces; unset = no tracing
     metrics_token: str | None = None  # if set, /metrics requires `Authorization: Bearer <token>`
     worker_metrics_port: int = 9100  # 0 disables the worker's /metrics server
+    # Off by default: the tested design is two processes (api, worker). Turn this on only where a
+    # separate worker process/service is not available (e.g. a single free-tier web service) — the
+    # API process then also drains the queue. Safe to run on several instances at once (the queue's
+    # claim is atomic per job either way); this exists for platforms too limited to run a second
+    # process type at all, not because a second instance would duplicate work.
+    embedded_worker: bool = False
 
 
 PLACEHOLDER_SECRETS = {"dev-secret", "dev-dashboard-secret-change-me"}
