@@ -21,10 +21,11 @@ interface Props {
   ownKey: boolean;
   onOwnKeyChange: (usesOwnKey: boolean) => void;
   installUrl: string | null;
+  billing: boolean;
 }
 
 /** The signed-in pages. Loaded on demand, so a visitor to the public site never downloads them. */
-export default function Dashboard({ overview, view, subtitle, updatedAt, refreshing, onRefresh, ownKey, onOwnKeyChange, installUrl }: Props) {
+export default function Dashboard({ overview, view, subtitle, updatedAt, refreshing, onRefresh, ownKey, onOwnKeyChange, installUrl, billing }: Props) {
   const t = overview.totals;
   const whole = (n: number) => int(Math.round(n));
   return (
@@ -94,7 +95,7 @@ export default function Dashboard({ overview, view, subtitle, updatedAt, refresh
         <>
           <Reveal as="section" label="Plan" y={10}>
             <SectionTitle icon="credit-card">Plan and usage</SectionTitle>
-            <PlanCard plan={overview.plan} period={overview.period} installation={overview.installation_id} />
+            <PlanCard plan={overview.plan} period={overview.period} installation={overview.installation_id} billing={billing} />
           </Reveal>
 
           <Reveal as="section" label="AI model" y={10}>

@@ -31,6 +31,34 @@ const loggedIn = {
   "GET /api/installations/42/overview": () => json(overview),
 };
 
+// The server has paid plans turned on (Stripe configured): only then is there anything to upgrade to.
+const withBilling = {
+  ...loggedIn,
+  "GET /api/config": () => json({ app_install_url: null, github_login: true, free_reviews_per_month: 20, billing: true }),
+};
+
+describe("free product, no billing", () => {
+  it("offers no upgrade button when paid plans are off", async () => {
+    window.history.replaceState(null, "", "/app/settings");
+    mockApi(loggedIn);
+    render(<App />);
+    const plan = await screen.findByRole("region", { name: "Plan" });
+    expect(within(plan).getByText(/3 of 20 reviews used/)).toBeInTheDocument();
+    expect(within(plan).queryByRole("button", { name: "Upgrade" })).not.toBeInTheDocument();
+  });
+
+  it("calls an unlimited free plan Free, never Pro", async () => {
+    window.history.replaceState(null, "", "/app/settings");
+    mockApi({ ...loggedIn, "GET /api/installations/42/overview": () => json({ ...overview, plan: { name: "free", limit: null, used: 7 } }) });
+    render(<App />);
+    const plan = await screen.findByRole("region", { name: "Plan" });
+    expect(within(plan).getByText("Unlimited reviews")).toBeInTheDocument();
+    expect(within(plan).getByText("Free")).toBeInTheDocument();
+    expect(within(plan).queryByText("Pro plan")).not.toBeInTheDocument();
+    expect(within(plan).getByText(/7 reviews so far/)).toBeInTheDocument();
+  });
+});
+
 describe("signed out", () => {
   it("shows the sign-in screen when the API says 401", async () => {
     window.history.replaceState(null, "", "/signin");
@@ -74,7 +102,7 @@ describe("signed in", () => {
 
   it("shows the plan, its meter and the upgrade button", async () => {
     window.history.replaceState(null, "", "/app/settings");
-    mockApi(loggedIn);
+    mockApi(withBilling);
     render(<App />);
     const plan = await screen.findByRole("region", { name: "Plan" });
     expect(within(plan).getByText(/3 of 20 reviews used in Sep 2026/)).toBeInTheDocument();
@@ -103,7 +131,7 @@ describe("signed in", () => {
     window.history.replaceState(null, "", "/app/settings");
     const assign = vi.fn();
     vi.stubGlobal("location", { ...window.location, assign });
-    const fetchMock = mockApi({ ...loggedIn, "POST /api/installations/42/billing/checkout": () => json({ url: "https://checkout.stripe.com/c/x" }) });
+    const fetchMock = mockApi({ ...withBilling, "POST /api/installations/42/billing/checkout": () => json({ url: "https://checkout.stripe.com/c/x" }) });
     render(<App />);
     await userEvent.click(await screen.findByRole("button", { name: "Upgrade" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith("https://checkout.stripe.com/c/x"));
@@ -112,7 +140,7 @@ describe("signed in", () => {
 
   it("explains when billing is not configured instead of failing silently", async () => {
     window.history.replaceState(null, "", "/app/settings");
-    mockApi({ ...loggedIn, "POST /api/installations/42/billing/checkout": () => new Response("", { status: 503 }) });
+    mockApi({ ...withBilling, "POST /api/installations/42/billing/checkout": () => new Response("", { status: 503 }) });
     render(<App />);
     await userEvent.click(await screen.findByRole("button", { name: "Upgrade" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Billing is not set up yet.");

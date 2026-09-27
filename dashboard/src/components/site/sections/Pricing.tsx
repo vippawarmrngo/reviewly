@@ -16,8 +16,8 @@ export function Pricing({ config, cta }: { config: PublicConfig | null; cta: Rea
   const free = config?.free_reviews_per_month;
   const billing = config?.billing ?? false;
   return (
-    <Section id="pricing" title="Pricing" lead="Start free. Bring your own key any time.">
-      <div className="plans">
+    <Section id="pricing" title="Pricing" lead={billing ? "Start free. Bring your own key any time." : "Free to use. Bring your own key if you want a specific model."}>
+      <div className={billing ? "plans" : "plans two"}>
         <Reveal className="card plan-card featured">
           <h3>Free</h3>
           <p className="price">{free === 0 ? "Unlimited" : free ? `${free} reviews / month` : "Monthly allowance"}</p>
@@ -28,27 +28,25 @@ export function Pricing({ config, cta }: { config: PublicConfig | null; cta: Rea
           </ul>
           {cta}
         </Reveal>
-        <Reveal delay={0.08} className={`card plan-card${billing ? "" : " muted-card"}`}>
-          <h3>Pro</h3>
-          <p className="price">Unlimited reviews</p>
-          <ul>
-            <Tick>Everything in Free</Tick>
-            <Tick>No monthly limit</Tick>
-          </ul>
-          {billing ? (
+        {billing && (
+          <Reveal delay={0.08} className="card plan-card">
+            <h3>Pro</h3>
+            <p className="price">Unlimited reviews</p>
+            <ul>
+              <Tick>Everything in Free</Tick>
+              <Tick>No monthly limit</Tick>
+            </ul>
             <Link className="btn" to="/signin">
               Sign in to upgrade
             </Link>
-          ) : (
-            <span className="muted small">Paid plans are not enabled on this server.</span>
-          )}
-        </Reveal>
+          </Reveal>
+        )}
         <Reveal delay={0.16} className="card plan-card">
           <h3>Your own key</h3>
           <p className="price">Pay your provider</p>
           <ul>
             <Tick>Choose any model you have access to</Tick>
-            <Tick>Doesn't count against the free allowance</Tick>
+            {free !== 0 && <Tick>Doesn't count against the free allowance</Tick>}
           </ul>
           <Link className="btn" to="/signin">
             Add a key

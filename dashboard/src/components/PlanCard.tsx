@@ -5,7 +5,15 @@ import type { Plan } from "../types";
 import { Icon } from "./Icon";
 import { Meter } from "./Meter";
 
-export function PlanCard({ plan, period, installation }: { plan: Plan; period: string; installation: number }) {
+interface Props {
+  plan: Plan;
+  period: string;
+  installation: number;
+  /** Paid plans exist on this server. Without it there is nothing to upgrade to, so no button. */
+  billing?: boolean;
+}
+
+export function PlanCard({ plan, period, installation, billing = false }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,7 +28,7 @@ export function PlanCard({ plan, period, installation }: { plan: Plan; period: s
     }
   }
 
-  if (plan.name === "pro" || plan.limit === null) {
+  if (plan.name === "pro") {
     return (
       <div className="plan card">
         <div className="grow">
@@ -29,6 +37,22 @@ export function PlanCard({ plan, period, installation }: { plan: Plan; period: s
             Pro plan
           </div>
           <div className="note">Unlimited reviews. {int(plan.used)} so far in {monthLabel(period)}.</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (plan.limit === null) {
+    return (
+      <div className="plan card">
+        <div className="grow">
+          <div className="name">
+            <span className="pill">Free</span>
+            Unlimited reviews
+          </div>
+          <div className="note">
+            {int(plan.used)} review{plan.used === 1 ? "" : "s"} so far in {monthLabel(period)}.
+          </div>
         </div>
       </div>
     );
@@ -52,10 +76,12 @@ export function PlanCard({ plan, period, installation }: { plan: Plan; period: s
         </div>
         {error && <div className="note" role="alert">{error}</div>}
       </div>
-      <button className="btn primary" onClick={upgrade} disabled={busy}>
-        {busy ? "Opening checkout…" : "Upgrade"}
-        {!busy && <Icon name="arrow-up-right" size={14} />}
-      </button>
+      {billing && (
+        <button className="btn primary" onClick={upgrade} disabled={busy}>
+          {busy ? "Opening checkout…" : "Upgrade"}
+          {!busy && <Icon name="arrow-up-right" size={14} />}
+        </button>
+      )}
     </div>
   );
 }
