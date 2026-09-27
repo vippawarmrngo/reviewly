@@ -265,6 +265,7 @@ function AppInner() {
           ownKey={ownKey}
           onOwnKeyChange={setOwnKey}
           installUrl={installUrl}
+          billing={config?.billing ?? false}
         />
       )}
     </>,

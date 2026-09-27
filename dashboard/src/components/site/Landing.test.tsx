@@ -45,12 +45,22 @@ describe("Landing", () => {
     expect(screen.getByText("Monthly allowance")).toBeInTheDocument(); // config unknown: no invented number
   });
 
-  it("only offers an upgrade when billing is really enabled", () => {
+  it("shows no paid plan at all when billing is off, and a Pro plan only when it is on", () => {
     const { rerender } = render(<Landing config={cfg({ billing: false })} installUrl={INSTALL} />);
-    expect(screen.getByText(/paid plans are not enabled/i)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Pro" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /sign in to upgrade/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/paid plans are not enabled/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/free to use\. bring your own key/i)).toBeInTheDocument();
     rerender(<Landing config={cfg({ billing: true })} installUrl={INSTALL} />);
+    expect(screen.getByRole("heading", { name: "Pro" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /sign in to upgrade/i })).toBeInTheDocument();
+  });
+
+  it("does not mention a free allowance when reviews are unlimited", () => {
+    const { rerender } = render(<Landing config={cfg({ free_reviews_per_month: 0 })} installUrl={INSTALL} />);
+    expect(screen.queryByText("Doesn't count against the free allowance")).not.toBeInTheDocument();
+    rerender(<Landing config={cfg({ free_reviews_per_month: 20 })} installUrl={INSTALL} />);
+    expect(screen.getByText("Doesn't count against the free allowance")).toBeInTheDocument();
   });
 
   it("answers the questions people have before installing, and is honest about accuracy", async () => {
